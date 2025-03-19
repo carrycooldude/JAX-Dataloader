@@ -4,7 +4,8 @@ Welcome to jax-dataloader's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-.. autoclass:: JAXDataLoader
-    :members:
-    :undoc-members:
-    :show-inheritance:
+
+.. automodule:: jax_dataloader.jax_dataloader.JAXDataLoader
+   :members:
+   :undoc-members:
+   :show-inheritance:

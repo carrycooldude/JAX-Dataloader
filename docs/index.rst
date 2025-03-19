@@ -6,7 +6,5 @@ Welcome to jax-dataloader's documentation!
    :caption: Contents:
 .. autoclass:: JAXDataLoader
     :members:
-.. .. automodule:: jax_dataloader.jax_dataloader.JAXDataLoader
-..    :members:
-..    :undoc-members:
-..    :show-inheritance:
+    :undoc-members:
+    :show-inheritance:

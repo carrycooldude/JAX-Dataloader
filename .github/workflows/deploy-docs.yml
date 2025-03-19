@@ -3,7 +3,7 @@ name: Deploy Documentation to GitHub Pages
 on:
   push:
     branches:
-      - main  # You can change this to the branch you use (e.g., 'master')
+      - main  # Trigger the workflow on push to the 'main' branch
 
 jobs:
   deploy:

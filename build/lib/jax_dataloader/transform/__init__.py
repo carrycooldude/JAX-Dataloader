@@ -30,3 +30,40 @@ class Transform:
         for transform in self._transforms:
             data = transform(data)
         return data
+        
+    def apply(self, data: Any) -> Any:
+        """Apply all transforms to the data.
+        
+        Args:
+            data: Data to transform
+            
+        Returns:
+            Transformed data
+        """
+        return self(data)
+        
+    def compose(self, other: 'Transform') -> 'Transform':
+        """Compose this transform with another transform.
+        
+        Args:
+            other: Transform to compose with
+            
+        Returns:
+            New composed transform
+        """
+        result = Transform()
+        result._transforms = self._transforms + other._transforms
+        return result
+        
+    def chain(self, *transforms: Callable) -> 'Transform':
+        """Chain multiple transforms together.
+        
+        Args:
+            *transforms: Transforms to chain
+            
+        Returns:
+            New transform with all transforms chained
+        """
+        result = Transform()
+        result._transforms = self._transforms + list(transforms)
+        return result

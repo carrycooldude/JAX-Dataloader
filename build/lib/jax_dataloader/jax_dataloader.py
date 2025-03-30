@@ -1,3 +1,5 @@
+"""JAX DataLoader - A high-performance data loading library for JAX applications."""
+
 import os
 import numpy as np
 import jax.numpy as jnp
@@ -11,8 +13,9 @@ import psutil
 import time
 from typing import Optional, Tuple, List, Union, Dict, Any
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import gc
+from .data import BaseLoader, CSVLoader, JSONLoader, ImageLoader
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,17 +23,58 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DataLoaderConfig:
-    """Configuration for JAXDataLoader."""
+    """Configuration for data loading."""
+    
     batch_size: int = 32
     shuffle: bool = True
-    num_workers: int = 4
-    pinned_memory: bool = True
-    prefetch: bool = True
-    multi_gpu: bool = False
-    auto_batch_size: bool = True
-    cache_size: int = 1000
-    augmentation: bool = False
-    progress_tracking: bool = True
+    seed: Optional[int] = None
+    num_workers: int = 0
+    prefetch_factor: int = 2
+    loader_type: str = "json"
+    data_path: str = ""
+    transform: Optional[Any] = None
+    
+    @staticmethod
+    def validate(config: Dict[str, Any]) -> bool:
+        """Validate the configuration.
+        
+        Args:
+            config: Configuration dictionary to validate
+            
+        Returns:
+            True if configuration is valid
+        """
+        required_fields = ["loader_type", "data_path"]
+        return all(field in config for field in required_fields)
+        
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert configuration to dictionary.
+        
+        Returns:
+            Dictionary representation of the configuration
+        """
+        return {
+            "batch_size": self.batch_size,
+            "shuffle": self.shuffle,
+            "seed": self.seed,
+            "num_workers": self.num_workers,
+            "prefetch_factor": self.prefetch_factor,
+            "loader_type": self.loader_type,
+            "data_path": self.data_path,
+            "transform": self.transform,
+        }
+        
+    @classmethod
+    def from_dict(cls, config: Dict[str, Any]) -> 'DataLoaderConfig':
+        """Create configuration from dictionary.
+        
+        Args:
+            config: Configuration dictionary
+            
+        Returns:
+            DataLoaderConfig instance
+        """
+        return cls(**config)
 
 class MemoryManager:
     """Manages memory allocation and cleanup."""
@@ -374,3 +418,141 @@ if __name__ == "__main__":
 
     for batch_x, batch_y in dataloader:
         print("Batch Shape:", batch_x.shape, batch_y.shape)
+
+class DataLoader:
+    """Main data loader class."""
+    
+    def __init__(self, config: DataLoaderConfig):
+        """Initialize the data loader.
+        
+        Args:
+            config: DataLoader configuration
+        """
+        self.config = config
+        self._loader = self._create_loader()
+        
+    def _create_loader(self) -> BaseLoader:
+        """Create the appropriate loader based on configuration.
+        
+        Returns:
+            Configured data loader
+        """
+        loader_map = {
+            "csv": CSVLoader,
+            "json": JSONLoader,
+            "image": ImageLoader,
+        }
+        
+        loader_class = loader_map.get(self.config.loader_type.lower())
+        if loader_class is None:
+            raise ValueError(f"Unsupported loader type: {self.config.loader_type}")
+            
+        return loader_class(
+            data_path=self.config.data_path,
+            batch_size=self.config.batch_size,
+            shuffle=self.config.shuffle,
+            seed=self.config.seed,
+            num_workers=self.config.num_workers,
+            prefetch_factor=self.config.prefetch_factor,
+        )
+        
+    def __iter__(self):
+        """Return an iterator over the data."""
+        return iter(self._loader)
+        
+    def __len__(self) -> int:
+        """Return the number of batches."""
+        return len(self._loader)
+        
+    def __next__(self):
+        """Get the next batch of data.
+
+        Returns:
+            tuple: A tuple containing the batch data and labels.
+        """
+        if self._current_batch >= len(self):
+            raise StopIteration
+        batch = self._loader.__next__()
+        self._current_batch += 1
+        return batch
+
+    def optimize_memory(self):
+        """Optimize memory usage by clearing unused data and running garbage collection.
+
+        Returns:
+            float: The amount of memory freed in bytes.
+        """
+        if hasattr(self._loader, 'memory_manager'):
+            return self._loader.memory_manager.cleanup()
+        return 0.0
+
+    def get_memory_usage(self):
+        """Get the current memory usage of the data loader.
+
+        Returns:
+            dict: A dictionary containing memory usage statistics.
+        """
+        if hasattr(self._loader, 'memory_manager'):
+            return self._loader.memory_manager.get_usage()
+        return {}
+
+    def reset(self):
+        """Reset the data loader to its initial state.
+
+        This method resets the internal state of the data loader, including the current batch
+        counter and any progress tracking.
+        """
+        self._current_batch = 0
+        if hasattr(self._loader, 'reset'):
+            self._loader.reset()
+
+    def get_progress(self):
+        """Get the current progress of data loading.
+
+        Returns:
+            dict: A dictionary containing progress information, including:
+                - current_batch: The current batch number
+                - total_batches: The total number of batches
+                - progress: The progress as a float between 0 and 1
+                - eta: Estimated time remaining in seconds
+        """
+        if not hasattr(self, '_current_batch'):
+            return {'current_batch': 0, 'total_batches': len(self), 'progress': 0.0, 'eta': 0.0}
+        
+        progress = self._current_batch / len(self)
+        return {
+            'current_batch': self._current_batch,
+            'total_batches': len(self),
+            'progress': progress,
+            'eta': 0.0 if progress >= 1.0 else (1.0 - progress) * len(self)
+        }
+        
+    def get_metadata(self) -> Dict[str, Any]:
+        """Get metadata about the data loader.
+        
+        Returns:
+            Dictionary containing metadata about the data loader
+        """
+        return self._loader.get_metadata()
+        
+    def load(self, data_path: str) -> Any:
+        """Load data from the specified path.
+        
+        Args:
+            data_path: Path to the data file
+            
+        Returns:
+            Loaded data
+        """
+        return self._loader.load(data_path)
+        
+    def preprocess(self, data: Any) -> Any:
+        """Preprocess the loaded data.
+        
+        Args:
+            data: Data to preprocess
+            
+        Returns:
+            Preprocessed data
+        """
+        return self._loader.preprocess(data)

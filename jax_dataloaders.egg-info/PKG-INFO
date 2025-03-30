@@ -1,7 +1,7 @@
 Metadata-Version: 2.4
 Name: jax-dataloaders
-Version: 0.1.7
-Summary: A high-performance data loading library for JAX applications
+Version: 0.1.9
+Summary: A high-performance data loading library for JAX
 Home-page: https://github.com/carrycooldude/JAX-Dataloader
 Author: Kartikey Rawat
 Author-email: rawatkari554@gmail.com
@@ -10,31 +10,32 @@ Classifier: Intended Audience :: Developers
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Classifier: Programming Language :: Python :: 3
-Classifier: Programming Language :: Python :: 3.7
 Classifier: Programming Language :: Python :: 3.8
 Classifier: Programming Language :: Python :: 3.9
 Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Topic :: Software Development :: Libraries :: Python Modules
-Requires-Python: >=3.7
+Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: jax>=0.3.0
-Requires-Dist: jaxlib>=0.3.0
-Requires-Dist: numpy>=1.19.0
-Requires-Dist: pandas>=1.2.0
-Requires-Dist: Pillow>=8.0.0
-Requires-Dist: psutil>=5.8.0
-Requires-Dist: tqdm>=4.50.0
+Requires-Dist: jax>=0.4.13
+Requires-Dist: jaxlib>=0.4.13
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: pillow>=10.0.0
+Requires-Dist: tqdm>=4.65.0
+Requires-Dist: psutil>=5.9.0
+Requires-Dist: typing-extensions>=4.5.0
 Provides-Extra: dev
-Requires-Dist: pytest>=6.0.0; extra == "dev"
-Requires-Dist: pytest-cov>=2.0.0; extra == "dev"
-Requires-Dist: black>=21.0.0; extra == "dev"
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
 Requires-Dist: isort>=5.0.0; extra == "dev"
-Requires-Dist: flake8>=3.9.0; extra == "dev"
-Requires-Dist: mypy>=0.910; extra == "dev"
-Requires-Dist: sphinx>=4.0.0; extra == "dev"
-Requires-Dist: sphinx-rtd-theme>=0.5.0; extra == "dev"
+Requires-Dist: flake8>=6.0.0; extra == "dev"
+Requires-Dist: mypy>=1.0.0; extra == "dev"
+Requires-Dist: sphinx>=7.0.0; extra == "dev"
+Requires-Dist: sphinx-rtd-theme>=1.0.0; extra == "dev"
+Requires-Dist: sphinx-autodoc-typehints>=1.0.0; extra == "dev"
 Provides-Extra: csv
 Requires-Dist: pandas>=2.0.0; extra == "csv"
 Provides-Extra: json

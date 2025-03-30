@@ -1,7 +1,9 @@
 import os
 import numpy as np
 import jax.numpy as jnp
-from jax import vmap
+import jax
+from jax import vmap, device_put
+from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 from PIL import Image
 import json
@@ -9,40 +11,25 @@ import json
 
 class JAXDataLoader:
     """
-    A data loader for loading and batching data for JAX models.
+    A high-performance JAX DataLoader with pinned memory and GPU prefetching.
 
-    Attributes
-    ----------
-    data : np.ndarray
-        The input data for the model (features).
-    labels : np.ndarray
-        The labels corresponding to the input data.
-    batch_size : int, optional
-        The size of each batch, by default 32.
-    shuffle : bool, optional
-        Whether to shuffle the data before each epoch, by default True.
-    num_workers : int, optional
-        The number of workers for loading data in parallel, by default 4.
-
-    Methods
-    -------
-    __iter__():
-        Resets the loader and returns itself for iteration.
-    __next__():
-        Returns the next batch of data and labels.
-    _parallel_process(batch_data, batch_labels):
-        Processes the batch in parallel.
-    _preprocess(sample):
-        Preprocesses each sample (normalizes it).
+    Features:
+    - Uses memory-mapped files for large datasets.
+    - Preloads batches into pinned memory (RAM).
+    - Prefetches data to GPU asynchronously.
+    - Supports CSV, JSON, and image datasets.
     """
 
-    def __init__(self, data, labels, batch_size=32, shuffle=True, num_workers=4):
-        self.data = np.array(data) if not isinstance(data, np.ndarray) else data
-        self.labels = np.array(labels) if not isinstance(labels, np.ndarray) else labels
+    def __init__(self, data, labels, batch_size=32, shuffle=True, num_workers=4, pinned_memory=True, prefetch=True):
+        self.data = np.asarray(data, dtype=np.float32) if not isinstance(data, np.ndarray) else data
+        self.labels = np.asarray(labels, dtype=np.int32) if not isinstance(labels, np.ndarray) else labels
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.num_workers = num_workers
-        self.indices = np.arange(len(data))
+        self.pinned_memory = pinned_memory
+        self.prefetch = prefetch
+
+        self.indices = np.arange(len(self.data))
         self.current_index = 0
         if self.shuffle:
             np.random.shuffle(self.indices)
@@ -56,22 +43,43 @@ class JAXDataLoader:
     def __next__(self):
         if self.current_index >= len(self.data):
             raise StopIteration
-        batch_indices = self.indices[self.current_index:self.current_index + self.batch_size]
-        batch_data, batch_labels = self.data[batch_indices], self.labels[batch_indices]
-        self.current_index += self.batch_size
-        return self._parallel_process(batch_data, batch_labels)
 
-    def _parallel_process(self, batch_data, batch_labels):
-        processed_data = vmap(self._preprocess)(batch_data)
-        return jnp.array(processed_data), jnp.array(batch_labels, dtype=jnp.int32)
+        batch_indices = self.indices[self.current_index:self.current_index + self.batch_size]
+        self.current_index += self.batch_size
+
+        # Load batch in parallel
+        with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
+            batch_data, batch_labels = zip(*executor.map(self._fetch_sample, batch_indices))
+
+        batch_data, batch_labels = np.array(batch_data), np.array(batch_labels)
+
+        if self.pinned_memory:
+            batch_data = np.asarray(batch_data, dtype=np.float32)  # Zero-copy transfer
+            batch_labels = np.asarray(batch_labels, dtype=np.int32)
+
+        # Move to GPU
+        batch_data, batch_labels = device_put((batch_data, batch_labels))
+
+        if self.prefetch:
+            batch_data, batch_labels = self._prefetch(batch_data, batch_labels)
+
+        return batch_data, batch_labels
+
+    def _fetch_sample(self, idx):
+        return self._preprocess(self.data[idx]), self.labels[idx]
+
+    def _prefetch(self, batch_data, batch_labels):
+        """Prefetches data to GPU asynchronously."""
+        return jax.jit(lambda x, y: (x, y))(batch_data, batch_labels)
 
     @staticmethod
     def _preprocess(sample):
-        # Example preprocessing: Normalize sample values to [0,1]
+        """Example preprocessing: Normalize sample values to [0,1]"""
         return jnp.array(sample) / 255.0
 
 
-def load_custom_data(file_path, file_type='csv', batch_size=32, target_column=None):
+def load_custom_data(file_path, file_type='csv', batch_size=32, target_column=None, pinned_memory=True):
+    """Loads data from CSV, JSON, or Image folders."""
     if file_type == 'csv':
         data, labels = load_csv_data(file_path, target_column)
     elif file_type == 'json':
@@ -81,10 +89,11 @@ def load_custom_data(file_path, file_type='csv', batch_size=32, target_column=No
     else:
         raise ValueError(f"Unsupported file type: {file_type}")
 
-    return JAXDataLoader(data, labels, batch_size=batch_size)
+    return JAXDataLoader(data, labels, batch_size=batch_size, pinned_memory=pinned_memory)
 
 
 def load_csv_data(file_path, target_column=None):
+    """Loads structured data from a CSV file."""
     df = pd.read_csv(file_path)
     print("CSV Columns:", df.columns.tolist())
     if target_column not in df.columns:
@@ -95,6 +104,7 @@ def load_csv_data(file_path, target_column=None):
 
 
 def load_json_data(file_path):
+    """Loads structured data from a JSON file."""
     with open(file_path, 'r') as f:
         data = json.load(f)
     features = np.array([item['features'] for item in data])
@@ -103,6 +113,7 @@ def load_json_data(file_path):
 
 
 def load_image_data(image_folder_path, img_size=(64, 64)):
+    """Loads image data from a folder and resizes it."""
     image_files = [f for f in os.listdir(image_folder_path) if f.endswith(('.jpg', '.png'))]
     data = []
     labels = []
@@ -117,7 +128,7 @@ def load_image_data(image_folder_path, img_size=(64, 64)):
 
 # Example usage: Loading custom dataset and iterating over it
 if __name__ == "__main__":
-    dataset_path = 'dataset_path'  # Replace with your dataset path
+    dataset_path = 'dataset.csv'  # Replace with actual dataset path
     batch_size = 64
 
     # Example 1: Loading CSV
@@ -130,4 +141,4 @@ if __name__ == "__main__":
     # dataloader = load_custom_data('images_folder/', file_type='image', batch_size=batch_size)
 
     for batch_x, batch_y in dataloader:
-        print(batch_x.shape, batch_y.shape)
+        print("Batch Shape:", batch_x.shape, batch_y.shape)

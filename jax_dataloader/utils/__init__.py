@@ -1,0 +1,39 @@
+"""Utility functions for JAX DataLoader."""
+
+import os
+from typing import Union
+
+def format_size(size: Union[int, float]) -> str:
+    """Format a size in bytes to a human-readable string.
+    
+    Args:
+        size: Size in bytes
+        
+    Returns:
+        Human-readable size string
+    """
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size < 1024:
+            return f"{size:.2f} {unit}"
+        size /= 1024
+    return f"{size:.2f} PB"
+
+def calculate_batch_size(
+    total_size: int,
+    max_memory: float,
+    sample_size: int,
+) -> int:
+    """Calculate the optimal batch size based on available memory.
+    
+    Args:
+        total_size: Total size of the dataset
+        max_memory: Maximum available memory in bytes
+        sample_size: Size of a single sample in bytes
+        
+    Returns:
+        Optimal batch size
+    """
+    # Leave some memory for other operations
+    available_memory = max_memory * 0.8
+    batch_size = int(available_memory / sample_size)
+    return min(batch_size, total_size)

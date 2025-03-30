@@ -3,6 +3,23 @@ Changelog
 
 All notable changes to JAX DataLoader will be documented in this file.
 
+[0.1.6] - 2025-03-30
+-------------------
+
+Added
+~~~~
+* Fixed PyPI version conflict
+* Improved package publishing workflow
+
+Changed
+~~~~~~~
+* Updated package version to 0.1.6
+* Enhanced release process
+
+Fixed
+~~~~
+* PyPI version conflict with 0.1.5
+
 [0.1.5] - 2025-03-30
 -------------------
 

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: jax-dataloaders
-Version: 0.1.4
+Version: 0.1.6
 Summary: A high-performance data loading library for JAX applications
 Home-page: https://github.com/carrycooldude/JAX-Dataloader
 Author: Kartikey Rawat

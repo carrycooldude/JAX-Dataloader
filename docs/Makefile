@@ -31,9 +31,9 @@ install:
 build: clean
 	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-# Build documentation with warnings as errors
-build-strict: clean
-	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) -W $(O)
+# Build strict documentation (fails on warnings)
+build-strict:
+	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O) -W
 
 # Build documentation with live reload
 live:

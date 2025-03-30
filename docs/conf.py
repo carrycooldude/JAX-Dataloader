@@ -7,10 +7,10 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('..'))
 
 project = 'JAX DataLoader'
-copyright = '2025, Kartikey Rawat'
+copyright = '2024, Kartikey Rawat'
 author = 'Kartikey Rawat'
 
 # -- General configuration ---------------------------------------------------
@@ -20,9 +20,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
-    'sphinx.ext.coverage',
+    'sphinx.ext.githubpages',
     'sphinx_autodoc_typehints',
 ]
 

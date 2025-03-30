@@ -10,7 +10,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="jax-dataloaders",
-    version="0.1.8",
+    version="0.1.9",
     author="Kartikey Rawat",
     author_email="rawatkari554@gmail.com",
     description="A high-performance data loading library for JAX",
@@ -37,8 +37,9 @@ setup(
         "numpy>=1.24.0",
         "pandas>=2.0.0",
         "pillow>=10.0.0",
-        "psutil>=5.9.0",
         "tqdm>=4.65.0",
+        "psutil>=5.9.0",
+        "typing-extensions>=4.5.0",
     ],
     include_package_data=True,
     package_data={
@@ -55,6 +56,7 @@ setup(
             "black>=23.0.0",
             "isort>=5.0.0",
             "flake8>=6.0.0",
+            "mypy>=1.0.0",
             "sphinx>=7.0.0",
             "sphinx-rtd-theme>=1.0.0",
             "sphinx-autodoc-typehints>=1.0.0",
@@ -64,4 +66,6 @@ setup(
         "image": ["pillow>=10.0.0"],
         "all": ["pandas>=2.0.0", "pillow>=10.0.0"],
     },
+    enable_jekyll=False,
+    disable_nojekyll=False,
 )

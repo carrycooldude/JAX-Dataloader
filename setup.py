@@ -10,7 +10,7 @@ setup(
     name="jax-dataloaders",
     version="0.1.4",
     author="Kartikey Rawat",
-    author_email="kartikey.rawat@example.com",
+    author_email="rawatkari554@gmail.com",
     description="A high-performance data loading library for JAX applications",
     long_description=long_description,
     long_description_content_type="text/markdown",

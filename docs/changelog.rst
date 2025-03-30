@@ -3,7 +3,7 @@ Changelog
 
 All notable changes to JAX DataLoader will be documented in this file.
 
-[0.1.4] - 2024-03-30
+[0.1.4] - 2025-03-30
 -------------------
 
 Added
@@ -23,7 +23,7 @@ Fixed
 * Missing module imports
 * Title underline formatting issues
 
-[0.1.3] - 2024-03-30
+[0.1.3] - 2025-03-30
 -------------------
 
 Added
@@ -45,7 +45,7 @@ Fixed
 * Documentation build process
 * Package versioning
 
-[0.1.2] - 2024-03-21
+[0.1.2] - 2025-03-30
 -------------------
 
 Changed
@@ -53,7 +53,7 @@ Changed
 * Updated package name to match PyPI repository
 * Fixed GitHub Actions workflow for automated releases
 
-[0.1.1] - 2024-03-21
+[0.1.1] - 2025-03-30
 -------------------
 
 Added
@@ -77,7 +77,7 @@ Fixed
 * Batch size calculation issues
 * Error handling in edge cases
 
-[0.1.0] - 2024-03-20
+[0.1.0] - 2025-03-30
 -------------------
 
 Added

@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       
@@ -30,29 +32,41 @@ jobs:
       - name: Build documentation
         run: |
           cd docs
+          echo "Cleaning previous builds..."
           make clean
+          echo "Building documentation..."
           make html
           # Check if build was successful
           if [ ! -d "_build/html" ]; then
             echo "Documentation build failed"
+            echo "Current directory contents:"
             ls -la
+            echo "Build directory contents:"
+            ls -la _build || true
             exit 1
           fi
           echo "Documentation build successful"
+          echo "Checking build directory contents:"
+          ls -la _build/html
           
       - name: Check documentation
         run: |
           cd docs
+          echo "Running strict build check..."
           make build-strict || true  # Don't fail on warnings
+          
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs/_build/html'
           
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/_build/html
-          publish_branch: gh-pages
-          force_orphan: true
-          allow_empty_commit: true
-          enable_jekyll: false
-          disable_nojekyll: false
+        environment:
+          name: github-pages
+          url: ${{ steps.pages.outputs.base_url }}
+        uses: actions/deploy-pages@v4

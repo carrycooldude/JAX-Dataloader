@@ -23,6 +23,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
           pip install -e ".[dev]"
+          pip install sphinx sphinx-rtd-theme sphinx-autodoc-typehints
           
       - name: Build documentation
         run: |

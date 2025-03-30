@@ -1,0 +1,390 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tutorials &mdash; JAX DataLoader  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Changelog" href="changelog.html" />
+    <link rel="prev" title="Examples" href="examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            JAX DataLoader
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started-with-image-classification">Getting Started with Image Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#large-scale-data-processing">Large-Scale Data Processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#multi-gpu-training">Multi-GPU Training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#custom-data-augmentation">Custom Data Augmentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-caching-strategies">Advanced Caching Strategies</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">JAX DataLoader</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Tutorials</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/tutorials.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tutorials">
+<h1>Tutorials<a class="headerlink" href="#tutorials" title="Link to this heading"></a></h1>
+<p>This section provides step-by-step tutorials for common use cases with JAX DataLoader.</p>
+<section id="getting-started-with-image-classification">
+<h2>Getting Started with Image Classification<a class="headerlink" href="#getting-started-with-image-classification" title="Link to this heading"></a></h2>
+<p>In this tutorial, we’ll create a complete image classification pipeline using JAX DataLoader.</p>
+<ol class="arabic simple">
+<li><p>First, let’s set up our environment:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax_dataloader</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">DataLoaderConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax_dataloader.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageLoader</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Create a data loader for our image dataset:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create image loader</span>
+<span class="n">loader</span> <span class="o">=</span> <span class="n">ImageLoader</span><span class="p">(</span>
+    <span class="s2">&quot;path/to/image/dataset&quot;</span><span class="p">,</span>
+    <span class="n">image_size</span><span class="o">=</span><span class="p">(</span><span class="mi">224</span><span class="p">,</span> <span class="mi">224</span><span class="p">),</span>
+    <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">augment</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Enable built-in augmentations</span>
+<span class="p">)</span>
+
+<span class="c1"># Configure the dataloader</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">DataLoaderConfig</span><span class="p">(</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="c1"># Create the dataloader</span>
+<span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Define a simple model:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="c1"># Simple CNN</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;w1&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;b1&#39;</span><span class="p">])</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;w2&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;b2&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;w3&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;b3&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="4">
+<li><p>Training loop:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initialize parameters</span>
+<span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;w1&#39;</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">224</span><span class="o">*</span><span class="mi">224</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span> <span class="mi">128</span><span class="p">)),</span>
+    <span class="s1">&#39;b1&#39;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">128</span><span class="p">),</span>
+    <span class="s1">&#39;w2&#39;</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">64</span><span class="p">)),</span>
+    <span class="s1">&#39;b2&#39;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">64</span><span class="p">),</span>
+    <span class="s1">&#39;w3&#39;</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">10</span><span class="p">)),</span>
+    <span class="s1">&#39;b3&#39;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1"># Training loop</span>
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">batch_data</span><span class="p">,</span> <span class="n">batch_labels</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+        <span class="c1"># Forward pass</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">batch_data</span><span class="p">)</span>
+
+        <span class="c1"># Compute loss</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">predictions</span> <span class="o">-</span> <span class="n">batch_labels</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># Backward pass (using JAX&#39;s grad)</span>
+        <span class="n">grads</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">model</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">batch_data</span><span class="p">)</span> <span class="o">-</span> <span class="n">batch_labels</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))(</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="c1"># Update parameters</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">g</span><span class="p">:</span> <span class="n">p</span> <span class="o">-</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">g</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">grads</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="large-scale-data-processing">
+<h2>Large-Scale Data Processing<a class="headerlink" href="#large-scale-data-processing" title="Link to this heading"></a></h2>
+<p>This tutorial demonstrates how to handle large datasets efficiently.</p>
+<ol class="arabic simple">
+<li><p>Set up memory-efficient data loading:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jax_dataloader</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">DataLoaderConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax_dataloader.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">CSVLoader</span>
+
+<span class="c1"># Create CSV loader with chunking</span>
+<span class="n">loader</span> <span class="o">=</span> <span class="n">CSVLoader</span><span class="p">(</span>
+    <span class="s2">&quot;large_dataset.csv&quot;</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>  <span class="c1"># Process in chunks</span>
+    <span class="n">target_column</span><span class="o">=</span><span class="s2">&quot;target&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Configure for memory efficiency</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">DataLoaderConfig</span><span class="p">(</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">memory_fraction</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">auto_batch_size</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">cache_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span>
+<span class="p">)</span>
+
+<span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Process data in batches:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enable memory optimization</span>
+<span class="n">dataloader</span><span class="o">.</span><span class="n">optimize_memory</span><span class="p">()</span>
+
+<span class="c1"># Process data</span>
+<span class="k">for</span> <span class="n">batch_data</span><span class="p">,</span> <span class="n">batch_labels</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+    <span class="c1"># Process batch</span>
+    <span class="n">process_batch</span><span class="p">(</span><span class="n">batch_data</span><span class="p">,</span> <span class="n">batch_labels</span><span class="p">)</span>
+
+    <span class="c1"># Monitor memory usage</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Memory usage: </span><span class="si">{</span><span class="n">dataloader</span><span class="o">.</span><span class="n">memory_manager</span><span class="o">.</span><span class="n">get_memory_usage</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="multi-gpu-training">
+<h2>Multi-GPU Training<a class="headerlink" href="#multi-gpu-training" title="Link to this heading"></a></h2>
+<p>Learn how to distribute training across multiple GPUs.</p>
+<ol class="arabic simple">
+<li><p>Set up multi-GPU configuration:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax_dataloader</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">DataLoaderConfig</span>
+
+<span class="c1"># Get available devices</span>
+<span class="n">devices</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">()</span>
+
+<span class="c1"># Create sample data</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span>
+
+<span class="c1"># Configure for multi-GPU</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">DataLoaderConfig</span><span class="p">(</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">num_devices</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">devices</span><span class="p">),</span>
+    <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Implement distributed training:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Training loop</span>
+<span class="k">for</span> <span class="n">batch_data</span><span class="p">,</span> <span class="n">batch_labels</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+    <span class="c1"># batch_data and batch_labels are already on the correct devices</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">device_id</span> <span class="o">=</span> <span class="n">batch_data</span>
+
+    <span class="c1"># Train on specific device</span>
+    <span class="k">with</span> <span class="n">jax</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="n">devices</span><span class="p">[</span><span class="n">device_id</span><span class="p">]):</span>
+        <span class="c1"># Your training code here</span>
+        <span class="n">train_step</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">batch_labels</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="custom-data-augmentation">
+<h2>Custom Data Augmentation<a class="headerlink" href="#custom-data-augmentation" title="Link to this heading"></a></h2>
+<p>Learn how to create custom data augmentation pipelines.</p>
+<ol class="arabic simple">
+<li><p>Define augmentation functions:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax.random</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">custom_augment</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+    <span class="c1"># Split key for multiple augmentations</span>
+    <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">key3</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="c1"># Add noise</span>
+    <span class="n">noise</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key1</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.1</span>
+    <span class="n">augmented</span> <span class="o">=</span> <span class="n">batch</span> <span class="o">+</span> <span class="n">noise</span>
+
+    <span class="c1"># Random rotation</span>
+    <span class="n">angle</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">key2</span><span class="p">,</span> <span class="n">minval</span><span class="o">=-</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">augmented</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">rot90</span><span class="p">(</span><span class="n">augmented</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">angle</span> <span class="o">*</span> <span class="mi">10</span><span class="p">))</span>
+
+    <span class="c1"># Random flip</span>
+    <span class="k">if</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">key3</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
+        <span class="n">augmented</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">augmented</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">augmented</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Apply custom augmentations:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jax_dataloader</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">DataLoaderConfig</span>
+
+<span class="c1"># Configure with custom augmentation</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">DataLoaderConfig</span><span class="p">(</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">transform</span><span class="o">=</span><span class="n">custom_augment</span><span class="p">,</span>
+    <span class="n">transform_key</span><span class="o">=</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Use in training:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">batch_data</span><span class="p">,</span> <span class="n">batch_labels</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+    <span class="c1"># batch_data is already augmented</span>
+    <span class="n">train_step</span><span class="p">(</span><span class="n">batch_data</span><span class="p">,</span> <span class="n">batch_labels</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="advanced-caching-strategies">
+<h2>Advanced Caching Strategies<a class="headerlink" href="#advanced-caching-strategies" title="Link to this heading"></a></h2>
+<p>Learn how to optimize data loading with advanced caching.</p>
+<ol class="arabic simple">
+<li><p>Set up caching:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jax_dataloader</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">DataLoaderConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax_dataloader.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cache</span>
+
+<span class="c1"># Create cache</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">Cache</span><span class="p">(</span>
+    <span class="n">max_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>  <span class="c1"># Maximum number of batches to cache</span>
+    <span class="n">eviction_policy</span><span class="o">=</span><span class="s2">&quot;lru&quot;</span>  <span class="c1"># Least Recently Used</span>
+<span class="p">)</span>
+
+<span class="c1"># Configure dataloader with cache</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">DataLoaderConfig</span><span class="p">(</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span>
+    <span class="n">cache_hits</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Track cache hits</span>
+<span class="p">)</span>
+
+<span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Monitor cache performance:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">batch_data</span><span class="p">,</span> <span class="n">batch_labels</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+    <span class="c1"># Process batch</span>
+    <span class="n">process_batch</span><span class="p">(</span><span class="n">batch_data</span><span class="p">,</span> <span class="n">batch_labels</span><span class="p">)</span>
+
+    <span class="c1"># Print cache statistics</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cache hits: </span><span class="si">{</span><span class="n">dataloader</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">hits</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cache misses: </span><span class="si">{</span><span class="n">dataloader</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">misses</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hit rate: </span><span class="si">{</span><span class="n">dataloader</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">hit_rate</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="examples.html" class="btn btn-neutral float-left" title="Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="changelog.html" class="btn btn-neutral float-right" title="Changelog" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Kartikey Rawat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

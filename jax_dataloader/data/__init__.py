@@ -32,6 +32,7 @@ class BaseLoader(ABC):
         self.num_workers = num_workers
         self.prefetch_factor = prefetch_factor
         self._rng = random.PRNGKey(seed) if seed is not None else random.PRNGKey(0)
+        self._metadata: Dict[str, Any] = {}
         
     @abstractmethod
     def __len__(self) -> int:
@@ -46,6 +47,21 @@ class BaseLoader(ABC):
     def __next__(self):
         """Get the next batch of data."""
         pass
+
+    def get_metadata(self) -> Dict[str, Any]:
+        """Get metadata about the data loader.
+        
+        Returns:
+            Dictionary containing metadata about the data loader
+        """
+        return {
+            "batch_size": self.batch_size,
+            "shuffle": self.shuffle,
+            "seed": self.seed,
+            "num_workers": self.num_workers,
+            "prefetch_factor": self.prefetch_factor,
+            **self._metadata
+        }
 
 class JSONLoader(BaseLoader):
     """Loader for JSON data."""

@@ -2,6 +2,8 @@
 
 import os
 from typing import Union
+import psutil
+from jax.lib import xla_bridge
 
 def format_size(size: Union[int, float]) -> str:
     """Format a size in bytes to a human-readable string.
@@ -37,3 +39,19 @@ def calculate_batch_size(
     available_memory = max_memory * 0.8
     batch_size = int(available_memory / sample_size)
     return min(batch_size, total_size)
+
+def get_available_memory() -> float:
+    """Get the available memory in bytes.
+    
+    Returns:
+        Available memory in bytes
+    """
+    return psutil.virtual_memory().available
+
+def get_device_count() -> int:
+    """Get the number of available devices.
+    
+    Returns:
+        Number of available devices
+    """
+    return len(xla_bridge.get_backend().devices())

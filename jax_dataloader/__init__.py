@@ -1,6 +1,6 @@
 """JAX DataLoader - A high-performance data loading library for JAX applications."""
 
-from .jax_dataloader import DataLoader, DataLoaderConfig, load_custom_data
+from .jax_dataloader import DataLoader, DataLoaderConfig
 from .data import BaseLoader, CSVLoader, JSONLoader, ImageLoader
 from .memory import MemoryManager, Cache
 from .progress import ProgressTracker
@@ -17,7 +17,6 @@ __version__ = '0.1.7'
 __all__ = [
     'DataLoader',
     'DataLoaderConfig',
-    'load_custom_data',
     'BaseLoader',
     'CSVLoader',
     'JSONLoader',

@@ -1,84 +1,126 @@
 # JAX DataLoader
 
-A high-performance data loading library for JAX, designed for efficient data loading and preprocessing in machine learning workflows.
+A high-performance data loading library for JAX applications.
 
 ## Features
 
-- Efficient data loading with automatic batching
-- Multi-GPU support with automatic batch distribution
-- Memory management with automatic batch size tuning
-- Support for various data formats (CSV, JSON, Images)
-- Progress tracking and statistics
-- Data caching and prefetching
-- Error handling and recovery
+- Efficient data loading with memory management
+- Support for CSV, JSON, and image data
+- Data augmentation and preprocessing
+- Progress tracking
+- Caching
+- Multi-GPU support
+- Memory monitoring and auto-tuning
 
 ## Installation
 
 ```bash
-pip install jax-dataloader
+pip install jax-dataloaders
 ```
 
-## Quick Start
+## Usage
+
+### Basic Usage
 
 ```python
-from jax_dataloader import JAXDataLoader, DataLoaderConfig
+from jax_dataloader import DataLoader, DataLoaderConfig
 
-# Create a DataLoader configuration
+# Create configuration
 config = DataLoaderConfig(
     batch_size=32,
-    num_workers=4,
-    multi_gpu=True
+    shuffle=True,
+    loader_type="csv",
+    data_path="data.csv"
 )
 
-# Load your data
-dataloader = JAXDataLoader(
-    data_path="path/to/your/data",
-    config=config
-)
+# Create data loader
+dataloader = DataLoader(config)
 
 # Iterate over batches
-for batch_x, batch_y in dataloader:
-    # Process your batch
-    ...
+for batch_data, batch_labels in dataloader:
+    print(f"Batch shape: {batch_data.shape}")
 ```
 
-## Examples
+### Advanced Usage
 
-The package includes comprehensive examples demonstrating various features:
+```python
+from jax_dataloader import DataLoader, DataLoaderConfig
+from jax_dataloader.transform import Transform
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/jax-dataloader.git
-cd jax-dataloader
+# Create transform
+transform = Transform()
+transform.add(lambda x: x * 2)  # Example transform
 
-# Install example dependencies
-pip install -r examples/requirements.txt
+# Create configuration
+config = DataLoaderConfig(
+    batch_size=32,
+    shuffle=True,
+    loader_type="json",
+    data_path="data.json",
+    transform=transform,
+    num_workers=4,
+    prefetch_factor=2
+)
 
-# Run the data loading demo
-cd examples/data_loading
-python demo.py
+# Create data loader
+dataloader = DataLoader(config)
+
+# Iterate over batches
+for batch_data, batch_labels in dataloader:
+    print(f"Batch shape: {batch_data.shape}")
 ```
-
-The examples demonstrate:
-- Loading different data formats (CSV, JSON, Images)
-- Multi-GPU support
-- Memory management
-- Progress tracking
-- Batch size optimization
-
-For more examples and detailed documentation, visit our [documentation](https://jax-dataloader.readthedocs.io/).
 
 ## Documentation
 
-For detailed documentation, including API reference and advanced usage examples, visit our [documentation](https://jax-dataloader.readthedocs.io/).
+For detailed documentation, visit [https://jax-dataloader.readthedocs.io/](https://jax-dataloader.readthedocs.io/).
 
-## Contributing
+## Development
 
-We welcome contributions! Please see our [contributing guide](CONTRIBUTING.md) for details.
+### Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/carrycooldude/JAX-Dataloader.git
+cd JAX-Dataloader
+```
+
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install development dependencies:
+```bash
+pip install -e ".[dev]"
+```
+
+### Testing
+
+Run tests:
+```bash
+pytest
+```
+
+### Building Documentation
+
+Build documentation:
+```bash
+cd docs
+make html
+```
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Author
+
+Kartikey Rawat
+
+## Repository
+
+GitHub: [https://github.com/carrycooldude/JAX-Dataloader](https://github.com/carrycooldude/JAX-Dataloader)
 
 ---
 

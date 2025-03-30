@@ -1,4 +1,4 @@
-"""Custom exceptions for JAX DataLoader."""
+"""Exception classes for JAX applications."""
 
 class DataLoaderError(Exception):
     """Base exception for data loader errors."""

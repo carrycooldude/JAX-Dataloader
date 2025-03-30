@@ -8,9 +8,7 @@ requirements.txt
 setup.py
 .github/workflows/deploy-docs.yml
 .github/workflows/publish.yml
-.venv/pyvenv.cfg
 dataset/make.bat
-docs/.gitignore
 docs/Makefile
 docs/README.md
 docs/api.rst
@@ -126,11 +124,17 @@ jax_dataloader/__pycache__/__init__.cpython-311.pyc
 jax_dataloader/__pycache__/jax_dataloader.cpython-310.pyc
 jax_dataloader/__pycache__/jax_dataloader.cpython-311.pyc
 jax_dataloader/data/__init__.py
+jax_dataloader/data/__pycache__/__init__.cpython-310.pyc
 jax_dataloader/exceptions/__init__.py
+jax_dataloader/exceptions/__pycache__/__init__.cpython-310.pyc
 jax_dataloader/memory/__init__.py
+jax_dataloader/memory/__pycache__/__init__.cpython-310.pyc
 jax_dataloader/progress/__init__.py
+jax_dataloader/progress/__pycache__/__init__.cpython-310.pyc
 jax_dataloader/transform/__init__.py
+jax_dataloader/transform/__pycache__/__init__.cpython-310.pyc
 jax_dataloader/utils/__init__.py
+jax_dataloader/utils/__pycache__/__init__.cpython-310.pyc
 jax_dataloaders.egg-info/PKG-INFO
 jax_dataloaders.egg-info/SOURCES.txt
 jax_dataloaders.egg-info/dependency_links.txt
@@ -241,6 +245,3 @@ test_data/structured/user_behavior.json
 tests/conftest.py
 tests/test_docs.py
 tests/test_jax_dataloader.py
-tests/__pycache__/conftest.cpython-310-pytest-8.3.5.pyc
-tests/__pycache__/conftest.cpython-38-pytest-6.2.2.pyc
-tests/__pycache__/test_jax_dataloader.cpython-310-pytest-8.3.5.pyc

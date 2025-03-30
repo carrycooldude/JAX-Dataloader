@@ -1,3 +1,5 @@
+"""Setup configuration for JAX DataLoader."""
+
 from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -20,15 +22,25 @@ setup(
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires=">=3.8",
-    install_requires=requirements,
+    python_requires=">=3.7",
+    install_requires=[
+        "jax>=0.3.0",
+        "jaxlib>=0.3.0",
+        "numpy>=1.19.0",
+        "pandas>=1.2.0",
+        "Pillow>=8.0.0",
+        "psutil>=5.8.0",
+        "tqdm>=4.50.0",
+    ],
     include_package_data=True,
     package_data={
         "jax_dataloader": ["py.typed"],
@@ -39,11 +51,18 @@ setup(
     ],
     extras_require={
         "dev": [
-            "pytest>=7.0.0",
-            "black>=23.0.0",
+            "pytest>=6.0.0",
+            "pytest-cov>=2.0.0",
+            "black>=21.0.0",
             "isort>=5.0.0",
-            "flake8>=6.0.0",
-            "mypy>=1.0.0",
+            "flake8>=3.9.0",
+            "mypy>=0.910",
+            "sphinx>=4.0.0",
+            "sphinx-rtd-theme>=0.5.0",
+            "sphinx-autodoc-typehints>=1.12.0",
+            "docutils>=0.16",
+            "build>=0.7.0",
+            "twine>=3.4.2",
         ],
         "csv": ["pandas>=2.0.0"],
         "json": ["pandas>=2.0.0"],

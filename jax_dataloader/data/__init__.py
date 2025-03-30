@@ -1,12 +1,13 @@
 """Data loading module for JAX applications."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Any, Dict, List, Optional, Union, Tuple, Callable
 
 import jax.numpy as jnp
 from jax import random
 import pandas as pd
 import numpy as np
+import json
 
 class BaseLoader(ABC):
     """Base class for all data loaders."""
@@ -96,7 +97,7 @@ class CSVLoader(BaseLoader):
         target_column: str,
         feature_columns: Optional[List[str]] = None,
         chunk_size: Optional[int] = None,
-        dtype: Any = jnp.float32,
+        dtype: Optional[jnp.dtype] = None,
         batch_size: int = 32,
         shuffle: bool = True,
         seed: Optional[int] = None,
@@ -110,7 +111,7 @@ class CSVLoader(BaseLoader):
             target_column: Name of the target column
             feature_columns: List of feature column names
             chunk_size: Size of chunks to load at once
-            dtype: Data type for the loaded data
+            dtype: Optional data type for arrays
             batch_size: Number of samples per batch
             shuffle: Whether to shuffle the data
             seed: Random seed for reproducibility
@@ -127,54 +128,48 @@ class CSVLoader(BaseLoader):
         self._labels = None
         
     def load(self, data_path: str) -> Any:
-        """Load CSV data from the specified path.
+        """Load data from the CSV file.
         
         Args:
             data_path: Path to the CSV file
             
         Returns:
-            Loaded CSV data
+            Loaded data
         """
-        df = pd.read_csv(data_path)
-        if self.target_column not in df.columns:
-            raise KeyError(f"Target column '{self.target_column}' not found in CSV")
+        if self.chunk_size is not None:
+            # Load data in chunks
+            chunks = []
+            labels = []
+            for chunk in pd.read_csv(data_path, chunksize=self.chunk_size):
+                if self.feature_columns is not None:
+                    chunk_data = chunk[self.feature_columns].values
+                else:
+                    chunk_data = chunk.drop(columns=[self.target_column]).values
+                chunks.append(chunk_data)
+                labels.append(chunk[self.target_column].values)
+            self._data = jnp.concatenate(chunks, axis=0, dtype=self.dtype)
+            self._labels = jnp.concatenate(labels, axis=0, dtype=self.dtype)
+        else:
+            # Load entire file at once
+            df = pd.read_csv(data_path)
+            if self.feature_columns is not None:
+                self._data = jnp.array(df[self.feature_columns].values, dtype=self.dtype)
+            else:
+                self._data = jnp.array(df.drop(columns=[self.target_column]).values, dtype=self.dtype)
+            self._labels = jnp.array(df[self.target_column].values, dtype=self.dtype)
             
-        if self.feature_columns is None:
-            self.feature_columns = [col for col in df.columns if col != self.target_column]
-            
-        data = df[self.feature_columns].values.astype(self.dtype)
-        labels = df[self.target_column].values
-        
-        self._data = data
-        self._labels = labels
-        return data, labels
+        return self._data
         
     def preprocess(self, data: Any) -> Any:
-        """Preprocess the loaded CSV data.
+        """Preprocess the loaded data.
         
         Args:
-            data: CSV data to preprocess
+            data: Data to preprocess
             
         Returns:
             Preprocessed data
         """
         return data
-        
-    def get_chunk(self, start_idx: int, chunk_size: Optional[int] = None) -> Tuple[Any, Any]:
-        """Get a chunk of data.
-        
-        Args:
-            start_idx: Starting index
-            chunk_size: Size of the chunk to load
-            
-        Returns:
-            Tuple of (data chunk, label chunk)
-        """
-        if chunk_size is None:
-            chunk_size = self.chunk_size or len(self._data)
-            
-        end_idx = min(start_idx + chunk_size, len(self._data))
-        return self._data[start_idx:end_idx], self._labels[start_idx:end_idx]
         
     def __len__(self) -> int:
         """Return the number of batches."""
@@ -195,12 +190,31 @@ class CSVLoader(BaseLoader):
             batch_indices = indices[i:i + self.batch_size]
             yield self._data[batch_indices], self._labels[batch_indices]
 
+    def get_chunk(self, start: int, size: int) -> Tuple[np.ndarray, np.ndarray]:
+        """Get a chunk of data from the CSV file.
+
+        Args:
+            start (int): The starting index of the chunk.
+            size (int): The size of the chunk.
+
+        Returns:
+            tuple: A tuple containing the chunk data and labels as numpy arrays.
+        """
+        df = pd.read_csv(self.data_path, skiprows=range(1, start + 1), nrows=size)
+        data = df.drop(columns=[self.target_column]).values
+        labels = df[self.target_column].values
+        return data, labels
+
 class JSONLoader(BaseLoader):
     """Loader for JSON data."""
     
     def __init__(
         self,
         data_path: str,
+        data_key: str = "data",
+        label_key: str = "labels",
+        preprocess_fn: Optional[Callable] = None,
+        dtype: Optional[jnp.dtype] = None,
         batch_size: int = 32,
         shuffle: bool = True,
         seed: Optional[int] = None,
@@ -211,6 +225,10 @@ class JSONLoader(BaseLoader):
         
         Args:
             data_path: Path to the JSON file
+            data_key: Key for data in JSON
+            label_key: Key for labels in JSON
+            preprocess_fn: Optional preprocessing function
+            dtype: Optional data type for arrays
             batch_size: Number of samples per batch
             shuffle: Whether to shuffle the data
             seed: Random seed for reproducibility
@@ -219,31 +237,61 @@ class JSONLoader(BaseLoader):
         """
         super().__init__(batch_size, shuffle, seed, num_workers, prefetch_factor)
         self.data_path = data_path
-        # TODO: Implement JSON loading logic
+        self.data_key = data_key
+        self.label_key = label_key
+        self.preprocess_fn = preprocess_fn
+        self.dtype = dtype
+        self._data = None
+        self._labels = None
         
     def load(self, data_path: str) -> Any:
-        """Load JSON data from the specified path.
+        """Load data from the JSON file.
         
         Args:
             data_path: Path to the JSON file
             
         Returns:
-            Loaded JSON data
+            Loaded data
         """
-        import json
         with open(data_path, 'r') as f:
-            return json.load(f)
+            data = json.load(f)
             
+        self._data = jnp.array(data[self.data_key], dtype=self.dtype)
+        self._labels = jnp.array(data[self.label_key], dtype=self.dtype)
+        
+        return self._data
+        
     def preprocess(self, data: Any) -> Any:
-        """Preprocess the loaded JSON data.
+        """Preprocess the loaded data.
         
         Args:
-            data: JSON data to preprocess
+            data: Data to preprocess
             
         Returns:
             Preprocessed data
         """
+        if self.preprocess_fn is not None:
+            return self.preprocess_fn(data)
         return data
+        
+    def __len__(self) -> int:
+        """Return the number of batches."""
+        if self._data is None:
+            self.load(self.data_path)
+        return (len(self._data) + self.batch_size - 1) // self.batch_size
+        
+    def __iter__(self):
+        """Return an iterator over the data."""
+        if self._data is None:
+            self.load(self.data_path)
+            
+        indices = np.arange(len(self._data))
+        if self.shuffle:
+            np.random.shuffle(indices)
+            
+        for i in range(0, len(indices), self.batch_size):
+            batch_indices = indices[i:i + self.batch_size]
+            yield self._data[batch_indices], self._labels[batch_indices]
 
 class ImageLoader(BaseLoader):
     """Loader for image data."""
@@ -285,34 +333,35 @@ class ImageLoader(BaseLoader):
         self._labels = []
         
     def load(self, data_path: str) -> Any:
-        """Load image data from the specified path.
+        """Load data from the image directory.
         
         Args:
             data_path: Path to the image directory
             
         Returns:
-            Loaded image data
+            Loaded data
         """
         import os
         from PIL import Image
         
+        # Get all image files
         self._image_files = []
         self._labels = []
         
-        for filename in os.listdir(data_path):
-            if filename.endswith(('.jpg', '.jpeg', '.png')):
-                self._image_files.append(os.path.join(data_path, filename))
-                # Assuming labels are part of filename (e.g., "0_image1.jpg")
-                label = int(filename.split('_')[0])
-                self._labels.append(label)
-                
-        return self._image_files, self._labels
+        for root, _, files in os.walk(data_path):
+            for file in files:
+                if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    self._image_files.append(os.path.join(root, file))
+                    # Use directory name as label
+                    self._labels.append(os.path.basename(root))
+                    
+        return self._image_files
         
     def preprocess(self, data: Any) -> Any:
-        """Preprocess the loaded image data.
+        """Preprocess the loaded data.
         
         Args:
-            data: Image data to preprocess
+            data: Data to preprocess
             
         Returns:
             Preprocessed data
@@ -320,16 +369,16 @@ class ImageLoader(BaseLoader):
         from PIL import Image
         import numpy as np
         
-        if isinstance(data, str):
-            img = Image.open(data)
-            img = img.resize(self.image_size)
-            img_array = np.array(img)
+        # Load and resize image
+        img = Image.open(data).convert('RGB')
+        img = img.resize(self.image_size)
+        img_array = np.array(img)
+        
+        # Normalize if requested
+        if self.normalize:
+            img_array = img_array.astype(np.float32) / 255.0
             
-            if self.normalize:
-                img_array = img_array.astype(np.float32) / 255.0
-                
-            return img_array
-        return data
+        return jnp.array(img_array)
         
     def augment(self, data: Any) -> Any:
         """Apply data augmentation to the image.

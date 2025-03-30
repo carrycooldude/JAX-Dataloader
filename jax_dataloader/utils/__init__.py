@@ -1,4 +1,4 @@
-"""Utility functions for JAX DataLoader."""
+"""Utility functions for JAX applications."""
 
 import os
 from typing import Union
@@ -37,8 +37,12 @@ def calculate_batch_size(
     """
     # Leave some memory for other operations
     available_memory = max_memory * 0.8
-    batch_size = int(available_memory / sample_size)
-    return min(batch_size, total_size)
+    
+    # Calculate maximum batch size based on memory
+    max_batch_size = int(available_memory / sample_size)
+    
+    # Ensure batch size is not too large
+    return min(max_batch_size, total_size)
 
 def get_available_memory() -> float:
     """Get the available memory in bytes.
@@ -54,4 +58,4 @@ def get_device_count() -> int:
     Returns:
         Number of available devices
     """
-    return len(xla_bridge.get_backend().devices())
+    return xla_bridge.device_count()

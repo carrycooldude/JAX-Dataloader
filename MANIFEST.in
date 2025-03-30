@@ -1,11 +1,26 @@
-include README.md
 include LICENSE
+include README.md
 include requirements.txt
 include pyproject.toml
 
-recursive-include examples *
-recursive-include docs *
-recursive-include tests *
+recursive-include docs *.rst
+recursive-include tests *.py
 
+recursive-exclude * __pycache__
+recursive-exclude * *.py[cod]
+recursive-exclude * *.so
+recursive-exclude * .git
+recursive-exclude * .gitignore
+recursive-exclude * .DS_Store
+recursive-exclude * .idea
+recursive-exclude * .vscode
+recursive-exclude * *.egg-info
+recursive-exclude * build
+recursive-exclude * dist
+recursive-exclude * venv
+recursive-exclude * env
+recursive-exclude * ENV
+
+recursive-include examples *
 recursive-include jax_dataloader *
 recursive-include _static *

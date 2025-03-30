@@ -1,6 +1,11 @@
 include README.md
 include LICENSE
 include requirements.txt
-recursive-include jax_dataloader *
+include pyproject.toml
+
+recursive-include examples *
 recursive-include docs *
+recursive-include tests *
+
+recursive-include jax_dataloader *
 recursive-include _static *

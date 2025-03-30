@@ -1,24 +1,40 @@
 from setuptools import setup, find_packages
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
+with open("requirements.txt", "r", encoding="utf-8") as fh:
+    requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+
 setup(
-    name='jax_dataloaders',  # Your package name
-    version='0.1.0',  # Version number, increment this for each release
-    packages=find_packages(),  # This automatically finds all the packages in your project
-    install_requires=[
-        'sphinx',  # List any dependencies required for your project
-        'sphinx_rtd_theme',
-    ],
-    package_data={
-        '': ['docs/*', 'requirements.txt'],  # Include docs and any other files in the package
-    },
+    name="jax-dataloaders",
+    version="0.1.1",
+    author="Kartikey Rawat",
+    author_email="your.email@example.com",
+    description="A high-performance data loading library for JAX",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/yourusername/jax-dataloader",
+    packages=find_packages(),
     classifiers=[
-        'Programming Language :: Python :: 3',  # Specify which Python versions your package supports
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
-    python_requires='>=3.6',  # Specify the minimum Python version
-    long_description=open('README.md').read(),  # This will add the contents of your README to the PyPI page
-    long_description_content_type='text/markdown',  # To specify Markdown format for the README
-    author='Kartikey Rawat', 
-    author_email='rawatkari554@gmail.com', 
+    python_requires=">=3.8",
+    install_requires=requirements,
+    include_package_data=True,
+    package_data={
+        "jax_dataloader": ["py.typed"],
+        "examples": ["requirements.txt", "README.md"],
+    },
+    data_files=[
+        ("examples", ["examples/requirements.txt", "examples/README.md"]),
+    ],
 )

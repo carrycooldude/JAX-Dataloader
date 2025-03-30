@@ -1,2 +1,8 @@
-sphinx
-sphinx_rtd_theme
+numpy>=1.21.0
+jax>=0.3.0
+jaxlib>=0.3.0
+pandas>=1.3.0
+Pillow>=8.0.0
+psutil>=5.8.0
+pytest>=6.0.0
+pytest-cov>=2.12.0

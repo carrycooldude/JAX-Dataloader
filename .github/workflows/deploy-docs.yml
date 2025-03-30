@@ -33,8 +33,10 @@ jobs:
           # Check if build was successful
           if [ ! -d "_build/html" ]; then
             echo "Documentation build failed"
+            ls -la
             exit 1
           fi
+          echo "Documentation build successful"
           
       - name: Check documentation
         run: |
@@ -49,3 +51,4 @@ jobs:
           publish_dir: ./docs/_build/html
           publish_branch: gh-pages
           force_orphan: true
+          allow_empty_commit: true

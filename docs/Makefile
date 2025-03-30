@@ -18,3 +18,23 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+# Clean build directory
+clean:
+	rm -rf $(BUILDDIR)/*
+
+# Install dependencies
+install:
+	pip install sphinx sphinx-rtd-theme sphinx-autodoc-typehints
+
+# Build documentation
+build: clean
+	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+# Build documentation with warnings as errors
+build-strict: clean
+	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) -W $(O)
+
+# Build documentation with live reload
+live:
+	sphinx-autobuild "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

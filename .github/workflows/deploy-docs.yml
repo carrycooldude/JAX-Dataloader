@@ -9,6 +9,8 @@ on:
 jobs:
   build-docs:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       
@@ -52,3 +54,5 @@ jobs:
           publish_branch: gh-pages
           force_orphan: true
           allow_empty_commit: true
+          enable_jekyll: false
+          disable_nojekyll: false

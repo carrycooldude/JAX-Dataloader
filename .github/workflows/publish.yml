@@ -27,8 +27,28 @@ jobs:
       - name: Build package
         run: python -m build
 
+      - name: Check if version exists
+        id: check_version
+        run: |
+          VERSION=$(python setup.py --version)
+          if curl -s "https://pypi.org/pypi/jax-dataloaders/$VERSION/json" > /dev/null; then
+            echo "Version $VERSION already exists on PyPI"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Version $VERSION is new"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Publish package to PyPI
+        if: steps.check_version.outputs.exists == 'false'
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: twine upload dist/*
+
+      - name: Handle version conflict
+        if: steps.check_version.outputs.exists == 'true'
+        run: |
+          echo "Error: Version $(python setup.py --version) already exists on PyPI"
+          echo "Please update the version in setup.py and try again"
+          exit 1

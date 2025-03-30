@@ -1,227 +1,224 @@
 Usage Guide
 ===========
 
-This guide will help you get started with JAX DataLoader and show you how to use its various features effectively.
+This guide covers the basic and advanced usage of JAX DataLoader.
 
 Basic Usage
 ----------
 
-The most basic usage of JAX DataLoader involves creating a DataLoader instance with your data and configuration:
+Loading Data
+~~~~~~~~~~~
+
+The basic way to load data is using the `DataLoader` class with a configuration:
 
 .. code-block:: python
 
    from jax_dataloader import DataLoader, DataLoaderConfig
-   import jax.numpy as jnp
 
-   # Create sample data
-   data = jnp.arange(1000)
-   labels = jnp.arange(1000)
-
-   # Configure the dataloader
+   # Create a configuration
    config = DataLoaderConfig(
+       data_path="data/train.csv",
+       loader_type="csv",
        batch_size=32,
-       shuffle=True,
-       drop_last=True
+       shuffle=True
    )
 
-   # Create the dataloader
-   dataloader = DataLoader(
-       data=data,
-       labels=labels,
-       config=config
-   )
+   # Create a data loader
+   loader = DataLoader(config)
 
    # Iterate over batches
-   for batch_data, batch_labels in dataloader:
-       # Process your batch
-       print(f"Batch shape: {batch_data.shape}")
+   for batch_data, batch_labels in loader:
+       # Process your batch here
+       pass
 
-Configuration Options
--------------------
+Data Formats
+~~~~~~~~~~~
 
-The DataLoaderConfig class provides various options to customize your data loading:
+JAX DataLoader supports various data formats:
+
+CSV Data
+^^^^^^^
 
 .. code-block:: python
 
    config = DataLoaderConfig(
-       batch_size=32,          # Size of each batch
-       shuffle=True,           # Whether to shuffle data
-       drop_last=False,        # Whether to drop the last incomplete batch
-       num_workers=4,          # Number of worker processes
-       pin_memory=True,        # Whether to pin memory for faster GPU transfer
-       prefetch_factor=2,      # Number of batches to prefetch
-       persistent_workers=True # Whether to keep workers alive between epochs
+       data_path="data/train.csv",
+       loader_type="csv",
+       target_column="label",
+       batch_size=32
+   )
+
+JSON Data
+^^^^^^^^
+
+.. code-block:: python
+
+   config = DataLoaderConfig(
+       data_path="data/train.json",
+       loader_type="json",
+       target_key="label",
+       batch_size=32
+   )
+
+Image Data
+^^^^^^^^^
+
+.. code-block:: python
+
+   config = DataLoaderConfig(
+       data_path="data/images/",
+       loader_type="image",
+       image_size=(224, 224),
+       batch_size=32
+   )
+
+Advanced Usage
+------------
+
+Data Transformation
+~~~~~~~~~~~~~~~~~
+
+You can apply transformations to your data using the `Transform` class:
+
+.. code-block:: python
+
+   from jax_dataloader import Transform
+
+   # Create transformations
+   transform = Transform()
+   transform.add("random_flip", probability=0.5)
+   transform.add("random_rotation", max_angle=30)
+
+   # Add to configuration
+   config = DataLoaderConfig(
+       data_path="data/images/",
+       loader_type="image",
+       transform=transform,
+       batch_size=32
    )
 
 Memory Management
----------------
+~~~~~~~~~~~~~~~
 
-JAX DataLoader provides several features for efficient memory management:
+JAX DataLoader provides memory management features:
 
 .. code-block:: python
 
+   from jax_dataloader.memory import MemoryManager
+
+   # Create memory manager
+   memory_manager = MemoryManager(max_memory=1024**3)  # 1GB
+
+   # Monitor memory usage
+   stats = memory_manager.monitor(interval=1.0)
+   print(f"Memory usage: {stats['current_usage']}")
+
+Caching
+~~~~~~
+
+You can use caching to improve performance:
+
+.. code-block:: python
+
+   from jax_dataloader.memory import Cache
+
+   # Create cache
+   cache = Cache(
+       max_size=1000,
+       eviction_policy="lru"
+   )
+
+   # Use cache in data loader
    config = DataLoaderConfig(
+       data_path="data/train.csv",
+       loader_type="csv",
        batch_size=32,
-       memory_fraction=0.8,    # Maximum fraction of available memory to use
-       auto_batch_size=True,   # Automatically adjust batch size based on memory
-       cache_size=1000         # Number of batches to cache
+       cache_size="1GB",
+       cache_policy="lru"
    )
 
-   dataloader = DataLoader(
-       data=data,
-       config=config
+   loader = DataLoader(config)
+
+   # Cache will automatically manage frequently accessed data
+   for epoch in range(num_epochs):
+       for batch_data, batch_labels in loader:
+           # Process your batch here
+           pass
+
+Progress Tracking
+~~~~~~~~~~~~~~~
+
+Track the progress of data loading:
+
+.. code-block:: python
+
+   from jax_dataloader.progress import ProgressTracker
+
+   # Create progress tracker
+   tracker = ProgressTracker(
+       total=1000,
+       update_interval=0.1
    )
 
-   # Enable memory optimization
-   dataloader.optimize_memory()
+   # Use tracker in data loader
+   config = DataLoaderConfig(
+       data_path="data/train.csv",
+       loader_type="csv",
+       batch_size=32,
+       show_progress=True
+   )
+
+   loader = DataLoader(config)
+
+   # Get progress information
+   progress = loader.get_progress()
+   print(f"Progress: {progress['progress']:.2%}")
+   print(f"ETA: {progress['eta']:.2f} seconds")
 
 Multi-GPU Support
----------------
+~~~~~~~~~~~~~~~
 
-To use multiple GPUs, you can configure the DataLoader to distribute data across devices:
+JAX DataLoader supports multi-GPU training:
 
 .. code-block:: python
 
    import jax
-   from jax_dataloader import DataLoader, DataLoaderConfig
 
-   # Get available devices
-   devices = jax.devices()
-   
    config = DataLoaderConfig(
-       batch_size=32,
-       num_devices=len(devices),  # Number of devices to use
-       device_map="auto"          # Automatic device mapping
+       data_path="data/train.csv",
+       loader_type="csv",
+       batch_size=32 * jax.device_count(),  # Scale batch size by number of devices
+       shuffle=True
    )
 
-   dataloader = DataLoader(
-       data=data,
-       config=config
-   )
+   loader = DataLoader(config)
 
-   # Data will be automatically distributed across devices
-   for batch in dataloader:
-       # batch will be a tuple of (data, device_id)
-       data, device_id = batch
-
-Progress Tracking
-----------------
-
-You can track the progress of data loading using the built-in progress bar:
-
-.. code-block:: python
-
-   from jax_dataloader import DataLoader, DataLoaderConfig
-   import jax.numpy as jnp
-
-   data = jnp.arange(1000)
-   config = DataLoaderConfig(
-       batch_size=32,
-       show_progress=True,     # Enable progress bar
-       progress_interval=0.1   # Update interval in seconds
-   )
-
-   dataloader = DataLoader(
-       data=data,
-       config=config
-   )
-
-   for batch in dataloader:
-       # Progress bar will show automatically
+   # Your training function
+   @jax.pmap
+   def train_step(params, batch):
+       # Your training logic here
        pass
-
-Data Augmentation
-----------------
-
-JAX DataLoader supports data augmentation through the transform system:
-
-.. code-block:: python
-
-   from jax_dataloader import DataLoader, DataLoaderConfig
-   import jax.numpy as jnp
-   import jax.random as random
-
-   def augment_fn(batch, key):
-       # Example augmentation: add random noise
-       noise = random.normal(key, batch.shape) * 0.1
-       return batch + noise
-
-   config = DataLoaderConfig(
-       batch_size=32,
-       transform=augment_fn,    # Apply augmentation function
-       transform_key=random.PRNGKey(0)  # Random key for augmentation
-   )
-
-   dataloader = DataLoader(
-       data=data,
-       config=config
-   )
-
-Loading Different Data Formats
-----------------------------
-
-JAX DataLoader supports various data formats:
-
-CSV Files:
-~~~~~~~~~~
-
-.. code-block:: python
-
-   from jax_dataloader import DataLoader, DataLoaderConfig
-   from jax_dataloader.data import CSVLoader
-
-   loader = CSVLoader("data.csv")
-   config = DataLoaderConfig(batch_size=32)
-   dataloader = DataLoader(loader=loader, config=config)
-
-JSON Files:
-~~~~~~~~~~
-
-.. code-block:: python
-
-   from jax_dataloader import DataLoader, DataLoaderConfig
-   from jax_dataloader.data import JSONLoader
-
-   loader = JSONLoader("data.json")
-   config = DataLoaderConfig(batch_size=32)
-   dataloader = DataLoader(loader=loader, config=config)
-
-Image Files:
-~~~~~~~~~~~
-
-.. code-block:: python
-
-   from jax_dataloader import DataLoader, DataLoaderConfig
-   from jax_dataloader.data import ImageLoader
-
-   loader = ImageLoader("image_directory")
-   config = DataLoaderConfig(
-       batch_size=32,
-       image_size=(224, 224)  # Resize images to 224x224
-   )
-   dataloader = DataLoader(loader=loader, config=config)
 
 Best Practices
 -------------
 
 1. **Batch Size Selection**
    - Start with a small batch size and increase based on available memory
-   - Use auto_batch_size=True for automatic optimization
-   - Consider using gradient accumulation for large models
+   - Use the `calculate_batch_size` utility function for optimal selection
 
 2. **Memory Management**
-   - Enable pin_memory=True when using GPU
-   - Use memory_fraction to limit memory usage
-   - Enable caching for frequently accessed data
+   - Monitor memory usage with `MemoryManager`
+   - Use caching for frequently accessed data
+   - Enable memory optimization features when needed
 
 3. **Performance Optimization**
-   - Use num_workers > 0 for parallel data loading
-   - Enable persistent_workers=True for better performance
-   - Use prefetch_factor to overlap data loading with computation
+   - Use appropriate number of workers
+   - Enable prefetching for better performance
+   - Use caching for repeated data access
 
 4. **Error Handling**
-   - Always wrap data loading in try-except blocks
-   - Use the built-in error handling features
-   - Monitor memory usage and adjust configuration accordingly
+   - Always check for data format compatibility
+   - Handle memory errors gracefully
+   - Use try-except blocks for data loading operations
 
-For more advanced usage and examples, check out the :doc:`examples` guide. 
+For more examples and detailed information, see the :doc:`examples` section. 

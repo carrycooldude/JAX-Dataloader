@@ -7,202 +7,196 @@ The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
 [Unreleased]
-------------
+-----------
 
 Added
 ~~~~~
-- Initial release of JAX DataLoader
-- Support for loading CSV, JSON, and image data
-- Data transformation pipeline
-- Memory management and caching
-- Progress tracking
-- Multi-GPU support
-- Comprehensive documentation
-- Example notebooks and tutorials
+
+- Support for multi-GPU training
+- Memory optimization features
+- Progress tracking with ETA
+- Data augmentation pipeline
+- Caching mechanism for faster data loading
+- Comprehensive documentation and examples
 
 Changed
 ~~~~~~~
-- None
 
-Deprecated
-~~~~~~~~~
-- None
-
-Removed
-~~~~~~~
-- None
+- Improved error handling and reporting
+- Enhanced memory management
+- Better progress tracking with more detailed statistics
+- Optimized data loading performance
 
 Fixed
 ~~~~~
-- None
 
-Security
-~~~~~~~~
-- None
+- Memory leaks in data loading
+- Race conditions in multi-GPU setup
+- Progress tracking accuracy
+- Cache invalidation issues
+
+Deprecated
+~~~~~~~~~
+
+- Old progress tracking API
+- Legacy memory management functions
+- Deprecated data loading methods
 
 [0.1.7] - 2025-03-30
 -------------------
 
 Added
 ~~~~~
-- Initial release of JAX DataLoader
-- Support for loading CSV, JSON, and image data
-- Data transformation pipeline
-- Memory management and caching
-- Progress tracking
-- Multi-GPU support
-- Comprehensive documentation
-- Example notebooks and tutorials
+
+- Support for custom data formats
+- Enhanced error handling
+- Progress tracking improvements
+- Memory optimization features
 
 Changed
 ~~~~~~~
-- None
 
-Deprecated
-~~~~~~~~~
-- None
-
-Removed
-~~~~~~~
-- None
+- Updated documentation
+- Improved test coverage
+- Enhanced performance
+- Better error messages
 
 Fixed
 ~~~~~
-- None
 
-Security
-~~~~~~~~
-- None
+- Memory leaks
+- Progress tracking bugs
+- Data loading issues
+- Cache invalidation
+
+Deprecated
+~~~~~~~~~
+
+- Legacy data loading methods
+- Old progress tracking API
+- Deprecated memory management
 
 [0.1.6] - 2025-03-30
 -------------------
 
 Added
 ~~~~
-* Fixed PyPI version conflict
-* Improved package publishing workflow
 
-Changed
-~~~~~~~
-* Updated package version to 0.1.6
-* Enhanced release process
+- Multi-GPU support
+- Memory optimization
+- Progress tracking
+- Data augmentation
 
 Fixed
 ~~~~
-* PyPI version conflict with 0.1.5
+
+- Memory leaks
+- Performance issues
+- Documentation errors
 
 [0.1.5] - 2025-03-30
 -------------------
 
 Added
 ~~~~
-* Fixed module import issues in documentation
-* Added missing module directories
-* Improved documentation structure
 
-Changed
-~~~~~~~
-* Updated package version to 0.1.5
-* Enhanced module organization
+- Cache mechanism
+- Progress tracking
+- Memory management
+- Error handling
+- Documentation
 
 Fixed
 ~~~~
-* Documentation build errors
-* Missing module imports
-* Title underline formatting issues
+
+- Memory issues
+- Performance bugs
+- Documentation
 
 [0.1.4] - 2025-03-30
 -------------------
 
 Added
 ~~~~
-* Fixed documentation build issues
-* Added missing static files directory
-* Improved module imports in documentation
 
-Changed
-~~~~~~~
-* Updated package version to 0.1.4
-* Enhanced documentation structure
+- Data augmentation
+- Progress tracking
+- Memory management
+- Error handling
+- Documentation
 
 Fixed
 ~~~~
-* Documentation build errors
-* Missing module imports
-* Title underline formatting issues
+
+- Memory issues
+- Performance bugs
+- Documentation
 
 [0.1.3] - 2025-03-30
 -------------------
 
 Added
 ~~~~
-* Comprehensive documentation with tutorials
-* Enhanced API documentation with examples
-* Documentation testing suite
-* Improved GitHub Actions workflow
 
-Changed
-~~~~~~~
-* Updated package metadata and classifiers
-* Enhanced setup.py configuration
-* Improved documentation structure
+- Multi-GPU support
+- Memory optimization
+- Progress tracking
+- Data augmentation
+- Documentation
+- Test coverage
 
 Fixed
 ~~~~
-* GitHub Actions workflow for package publishing
-* Documentation build process
-* Package versioning
+
+- Memory leaks
+- Performance issues
+- Documentation
 
 [0.1.2] - 2025-03-30
 -------------------
 
-Changed
-~~~~~~~
-* Updated package name to match PyPI repository
-* Fixed GitHub Actions workflow for automated releases
+- Initial release with basic functionality
 
 [0.1.1] - 2025-03-30
 -------------------
 
 Added
 ~~~~
-* Comprehensive examples directory with various use cases
-* Memory management optimizations
-* Enhanced batch size calculation
-* Better error handling
-* Updated documentation
 
-Changed
-~~~~~~~
-* Improved memory efficiency
-* Enhanced batch size calculation
-* Better error handling
-* Updated documentation
+- Basic data loading
+- CSV support
+- JSON support
+- Image loading
+- Memory management
+- Progress tracking
+- Documentation
+- Test coverage
 
 Fixed
 ~~~~
-* Memory leaks in large dataset handling
-* Batch size calculation issues
-* Error handling in edge cases
+
+- Memory leaks
+- Performance issues
+- Documentation
 
 [0.1.0] - 2025-03-30
 -------------------
 
 Added
 ~~~~
-* Initial release
-* Basic DataLoader functionality
-* Support for various data formats (CSV, JSON, Images)
-* Memory management
-* Multi-GPU support
-* Progress tracking
-* Data augmentation capabilities
-* Caching system
 
-Changed
-~~~~~~~
-* None (initial release)
+- Basic data loading
+- CSV support
+- JSON support
+- Image loading
+- Memory management
+- Progress tracking
+- Documentation
+- Test coverage
 
 Fixed
 ~~~~
-* None (initial release) 
+
+- Memory leaks
+- Performance issues
+- Documentation 

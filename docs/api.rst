@@ -1,5 +1,5 @@
 API Reference
-============
+=============
 
 Core Classes
 -----------
@@ -8,6 +8,7 @@ DataLoader
 ~~~~~~~~~
 
 .. autoclass:: jax_dataloader.DataLoader
+   :no-index:
    :members:
    :undoc-members:
    :show-inheritance:
@@ -57,6 +58,7 @@ DataLoaderConfig
 ~~~~~~~~~~~~~~~
 
 .. autoclass:: jax_dataloader.DataLoaderConfig
+   :no-index:
    :members:
    :undoc-members:
    :show-inheritance:
@@ -104,6 +106,7 @@ CSVLoader
 ~~~~~~~~
 
 .. autoclass:: jax_dataloader.data.CSVLoader
+   :no-index:
    :members:
    :undoc-members:
    :show-inheritance:
@@ -144,6 +147,7 @@ JSONLoader
 ~~~~~~~~~
 
 .. autoclass:: jax_dataloader.data.JSONLoader
+   :no-index:
    :members:
    :undoc-members:
    :show-inheritance:
@@ -184,6 +188,7 @@ ImageLoader
 ~~~~~~~~~~
 
 .. autoclass:: jax_dataloader.data.ImageLoader
+   :no-index:
    :members:
    :undoc-members:
    :show-inheritance:
@@ -229,6 +234,7 @@ BaseLoader
 ~~~~~~~~~
 
 .. autoclass:: jax_dataloader.data.BaseLoader
+   :no-index:
    :members:
    :undoc-members:
    :show-inheritance:
@@ -245,9 +251,10 @@ Memory Management
 ---------------
 
 MemoryManager
-~~~~~~~~~~~
+~~~~~~~~~~~~
 
 .. autoclass:: jax_dataloader.memory.MemoryManager
+   :no-index:
    :members:
    :undoc-members:
    :show-inheritance:
@@ -283,6 +290,7 @@ Cache
 ~~~~~
 
 .. autoclass:: jax_dataloader.memory.Cache
+   :no-index:
    :members:
    :undoc-members:
    :show-inheritance:
@@ -326,6 +334,7 @@ ProgressTracker
 ~~~~~~~~~~~~~
 
 .. autoclass:: jax_dataloader.progress.ProgressTracker
+   :no-index:
    :members:
    :undoc-members:
    :show-inheritance:
@@ -371,6 +380,7 @@ Transform
 ~~~~~~~~
 
 .. autoclass:: jax_dataloader.transform.Transform
+   :no-index:
    :members:
    :undoc-members:
    :show-inheritance:
@@ -406,24 +416,40 @@ Exceptions
 ---------
 
 DataLoaderError
-~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 .. autoexception:: jax_dataloader.exceptions.DataLoaderError
+   :no-index:
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 ConfigurationError
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 .. autoexception:: jax_dataloader.exceptions.ConfigurationError
+   :no-index:
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 MemoryError
-~~~~~~~~~
+~~~~~~~~~~
 
 .. autoexception:: jax_dataloader.exceptions.MemoryError
+   :no-index:
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Utility Functions
---------------
+---------------
 
-.. autofunction:: jax_dataloader.utils.get_available_memory
-.. autofunction:: jax_dataloader.utils.calculate_batch_size
-.. autofunction:: jax_dataloader.utils.get_device_count
-.. autofunction:: jax_dataloader.utils.format_size 
+.. autofunction:: jax_dataloader.utils.get_memory_usage
+   :no-index:
+
+.. autofunction:: jax_dataloader.utils.format_size
+   :no-index:
+
+.. autofunction:: jax_dataloader.utils.get_gpu_memory_usage
+   :no-index: 

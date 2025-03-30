@@ -1,43 +1,37 @@
 Examples
 ========
 
-This section provides detailed examples of using JAX DataLoader in various scenarios.
-
 Basic Examples
-------------
+-------------
 
 Simple Data Loading
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
    from jax_dataloader import DataLoader, DataLoaderConfig
    import jax.numpy as jnp
 
-   # Create sample data
-   data = jnp.arange(1000)
-   labels = jnp.arange(1000)
-
-   # Configure the dataloader
+   # Create configuration
    config = DataLoaderConfig(
+       loader_type="csv",
+       data_path="data.csv",
+       target_column="label",
+       feature_columns=["feature1", "feature2"],
        batch_size=32,
-       shuffle=True,
-       drop_last=True
+       shuffle=True
    )
 
-   # Create the dataloader
-   dataloader = DataLoader(
-       data=data,
-       labels=labels,
-       config=config
-   )
+   # Create data loader
+   dataloader = DataLoader(config)
 
    # Iterate over batches
    for batch_data, batch_labels in dataloader:
        print(f"Batch shape: {batch_data.shape}")
+       print(f"Labels shape: {batch_labels.shape}")
 
 Loading from Files
-----------------
+-----------------
 
 CSV Data
 ~~~~~~~
@@ -45,63 +39,51 @@ CSV Data
 .. code-block:: python
 
    from jax_dataloader import DataLoader, DataLoaderConfig
-   from jax_dataloader.data import CSVLoader
+   import jax.numpy as jnp
 
-   # Create CSV loader
-   loader = CSVLoader(
-       "data.csv",
-       target_column="label",
-       feature_columns=["feature1", "feature2"]
-   )
-
-   # Configure the dataloader
+   # Create configuration
    config = DataLoaderConfig(
+       loader_type="csv",
+       data_path="data.csv",
+       target_column="label",
+       feature_columns=["feature1", "feature2"],
        batch_size=32,
        shuffle=True
    )
 
-   # Create the dataloader
-   dataloader = DataLoader(
-       loader=loader,
-       config=config
-   )
+   # Create data loader
+   dataloader = DataLoader(config)
 
    # Iterate over batches
-   for features, labels in dataloader:
-       print(f"Features shape: {features.shape}")
-       print(f"Labels shape: {labels.shape}")
+   for batch_data, batch_labels in dataloader:
+       print(f"Batch shape: {batch_data.shape}")
+       print(f"Labels shape: {batch_labels.shape}")
 
 JSON Data
-~~~~~~~~
+~~~~~~~~~
 
 .. code-block:: python
 
    from jax_dataloader import DataLoader, DataLoaderConfig
-   from jax_dataloader.data import JSONLoader
+   import jax.numpy as jnp
 
-   # Create JSON loader
-   loader = JSONLoader(
-       "data.json",
-       data_key="features",
-       label_key="labels"
-   )
-
-   # Configure the dataloader
+   # Create configuration
    config = DataLoaderConfig(
+       loader_type="json",
+       data_path="data.json",
+       data_key="features",
+       label_key="labels",
        batch_size=32,
        shuffle=True
    )
 
-   # Create the dataloader
-   dataloader = DataLoader(
-       loader=loader,
-       config=config
-   )
+   # Create data loader
+   dataloader = DataLoader(config)
 
    # Iterate over batches
-   for data, labels in dataloader:
-       print(f"Data shape: {data.shape}")
-       print(f"Labels shape: {labels.shape}")
+   for batch_data, batch_labels in dataloader:
+       print(f"Batch shape: {batch_data.shape}")
+       print(f"Labels shape: {batch_labels.shape}")
 
 Image Data
 ~~~~~~~~~
@@ -109,32 +91,25 @@ Image Data
 .. code-block:: python
 
    from jax_dataloader import DataLoader, DataLoaderConfig
-   from jax_dataloader.data import ImageLoader
+   import jax.numpy as jnp
 
-   # Create image loader
-   loader = ImageLoader(
-       "image_directory",
-       image_size=(224, 224),
-       normalize=True
-   )
-
-   # Configure the dataloader
+   # Create configuration
    config = DataLoaderConfig(
+       loader_type="image",
+       data_path="image_directory",
+       image_size=(224, 224),
+       normalize=True,
        batch_size=32,
-       shuffle=True,
-       num_workers=4
+       shuffle=True
    )
 
-   # Create the dataloader
-   dataloader = DataLoader(
-       loader=loader,
-       config=config
-   )
+   # Create data loader
+   dataloader = DataLoader(config)
 
    # Iterate over batches
-   for images, labels in dataloader:
-       print(f"Images shape: {images.shape}")
-       print(f"Labels shape: {labels.shape}")
+   for batch_data, batch_labels in dataloader:
+       print(f"Batch shape: {batch_data.shape}")
+       print(f"Labels shape: {batch_labels.shape}")
 
 Advanced Examples
 --------------
@@ -144,37 +119,29 @@ Multi-GPU Training
 
 .. code-block:: python
 
-   import jax
    from jax_dataloader import DataLoader, DataLoaderConfig
+   import jax
    import jax.numpy as jnp
 
    # Get available devices
    devices = jax.devices()
-   
-   # Create sample data
-   data = jnp.arange(10000)
-   labels = jnp.arange(10000)
 
-   # Configure for multi-GPU
+   # Create configuration
    config = DataLoaderConfig(
-       batch_size=32,
-       num_devices=len(devices),
-       device_map="auto",
-       pin_memory=True
+       loader_type="csv",
+       data_path="data.csv",
+       batch_size=32 * len(devices),  # Scale batch size with number of devices
+       shuffle=True,
+       multi_gpu=True
    )
 
-   # Create the dataloader
-   dataloader = DataLoader(
-       data=data,
-       labels=labels,
-       config=config
-   )
+   # Create data loader
+   dataloader = DataLoader(config)
 
-   # Training loop
+   # Iterate over batches
    for batch_data, batch_labels in dataloader:
-       # batch_data and batch_labels are already on the correct devices
-       # Your training code here
-       pass
+       print(f"Batch shape: {batch_data.shape}")
+       print(f"Number of devices: {len(devices)}")
 
 Data Augmentation
 ~~~~~~~~~~~~~~~
@@ -182,42 +149,29 @@ Data Augmentation
 .. code-block:: python
 
    from jax_dataloader import DataLoader, DataLoaderConfig
+   from jax_dataloader.transform import Transform
    import jax.numpy as jnp
-   import jax.random as random
 
-   # Define augmentation function
-   def augment_fn(batch, key):
-       # Add random noise
-       noise = random.normal(key, batch.shape) * 0.1
-       augmented = batch + noise
-       
-       # Random rotation
-       angle = random.uniform(key, minval=-0.1, maxval=0.1)
-       augmented = jnp.rot90(augmented, k=int(angle * 10))
-       
-       return augmented
+   # Create transform
+   transform = Transform()
+   transform.add(lambda x: x * 2)  # Example transform
+   transform.add(lambda x: jnp.clip(x, 0, 1))  # Clip values
 
-   # Create sample data
-   data = jnp.arange(1000).reshape(100, 10, 10)
-   labels = jnp.arange(100)
-
-   # Configure with augmentation
+   # Create configuration
    config = DataLoaderConfig(
+       loader_type="csv",
+       data_path="data.csv",
+       transform=transform,
        batch_size=32,
-       transform=augment_fn,
-       transform_key=random.PRNGKey(0)
+       shuffle=True
    )
 
-   # Create the dataloader
-   dataloader = DataLoader(
-       data=data,
-       labels=labels,
-       config=config
-   )
+   # Create data loader
+   dataloader = DataLoader(config)
 
-   # Iterate over augmented batches
+   # Iterate over batches
    for batch_data, batch_labels in dataloader:
-       print(f"Augmented batch shape: {batch_data.shape}")
+       print(f"Transformed batch shape: {batch_data.shape}")
 
 Memory Management
 ~~~~~~~~~~~~~~~
@@ -225,35 +179,33 @@ Memory Management
 .. code-block:: python
 
    from jax_dataloader import DataLoader, DataLoaderConfig
-   import jax.numpy as jnp
+   from jax_dataloader.memory import MemoryManager
+   from jax_dataloader.utils import calculate_batch_size
 
-   # Create large dataset
-   data = jnp.arange(1000000)
-   labels = jnp.arange(1000000)
+   # Create memory manager
+   memory_manager = MemoryManager(max_memory=1024**3)  # 1GB
 
-   # Configure for memory efficiency
+   # Calculate optimal batch size
+   batch_size = calculate_batch_size(
+       total_size=10000,
+       max_memory=1024**3,
+       sample_size=1000
+   )
+
+   # Create configuration
    config = DataLoaderConfig(
-       batch_size=32,
-       memory_fraction=0.8,
-       auto_batch_size=True,
-       cache_size=1000,
-       num_workers=4
+       loader_type="csv",
+       data_path="data.csv",
+       batch_size=batch_size,
+       shuffle=True
    )
 
-   # Create the dataloader
-   dataloader = DataLoader(
-       data=data,
-       labels=labels,
-       config=config
-   )
+   # Create data loader
+   dataloader = DataLoader(config)
 
-   # Enable memory optimization
-   dataloader.optimize_memory()
-
-   # Iterate over memory-efficient batches
-   for batch_data, batch_labels in dataloader:
-       print(f"Batch shape: {batch_data.shape}")
-       print(f"Memory usage: {dataloader.memory_manager.get_memory_usage()}")
+   # Monitor memory usage
+   stats = memory_manager.monitor(interval=1.0)
+   print(f"Memory usage: {stats['current_usage']}")
 
 Progress Tracking
 ~~~~~~~~~~~~~~~
@@ -261,38 +213,35 @@ Progress Tracking
 .. code-block:: python
 
    from jax_dataloader import DataLoader, DataLoaderConfig
+   from jax_dataloader.progress import ProgressTracker
    import jax.numpy as jnp
-   import time
 
-   # Create sample data
-   data = jnp.arange(1000)
-   labels = jnp.arange(1000)
+   # Create progress tracker
+   tracker = ProgressTracker(
+       total=1000,
+       update_interval=0.1,
+       show_eta=True
+   )
 
-   # Configure with progress tracking
+   # Create configuration
    config = DataLoaderConfig(
+       loader_type="csv",
+       data_path="data.csv",
+       progress_tracker=tracker,
        batch_size=32,
-       show_progress=True,
-       progress_interval=0.1
+       shuffle=True
    )
 
-   # Create the dataloader
-   dataloader = DataLoader(
-       data=data,
-       labels=labels,
-       config=config
-   )
+   # Create data loader
+   dataloader = DataLoader(config)
 
-   # Training loop with progress tracking
-   start_time = time.time()
+   # Iterate over batches
    for batch_data, batch_labels in dataloader:
-       # Simulate processing time
-       time.sleep(0.1)
-       
-       # Progress bar will show automatically
-       print(f"Processing batch...")
+       print(f"Batch shape: {batch_data.shape}")
 
-   end_time = time.time()
-   print(f"Total time: {end_time - start_time:.2f} seconds")
+   # Print progress statistics
+   print(f"Progress: {tracker.get_progress():.1%}")
+   print(f"ETA: {tracker.get_eta():.1f} seconds")
 
 Error Handling
 ~~~~~~~~~~~~
@@ -301,35 +250,14 @@ Error Handling
 
    from jax_dataloader import DataLoader, DataLoaderConfig
    from jax_dataloader.exceptions import DataLoaderError
-   import jax.numpy as jnp
 
-   # Create sample data
-   data = jnp.arange(1000)
-   labels = jnp.arange(1000)
-
-   # Configure the dataloader
-   config = DataLoaderConfig(
-       batch_size=32,
-       error_handling=True
-   )
-
-   # Create the dataloader
-   dataloader = DataLoader(
-       data=data,
-       labels=labels,
-       config=config
-   )
-
-   # Training loop with error handling
    try:
-       for batch_data, batch_labels in dataloader:
-           try:
-               # Your processing code here
-               pass
-           except Exception as e:
-               print(f"Error processing batch: {e}")
-               continue
-   except DataLoaderError as e:
-       print(f"DataLoader error: {e}")
-   except Exception as e:
-       print(f"Unexpected error: {e}") 
+       config = DataLoaderConfig(
+           loader_type="invalid",
+           data_path="data.json"
+       )
+       dataloader = DataLoader(config)
+   except ValueError as e:
+       print(f"Error: {e}")
+
+For more examples and use cases, check out the `GitHub repository <https://github.com/carrycooldude/JAX-Dataloader/tree/main/examples>`_. 

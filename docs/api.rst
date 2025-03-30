@@ -1,7 +1,5 @@
 API Reference
-=============
-
-This section provides detailed documentation for the JAX DataLoader API.
+============
 
 Core Classes
 -----------
@@ -56,7 +54,7 @@ DataLoader
    .. automethod:: get_progress
 
 DataLoaderConfig
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 .. autoclass:: jax_dataloader.DataLoaderConfig
    :members:
@@ -213,9 +211,9 @@ ImageLoader
           normalize=True,
           augment=True,
           augment_options={
-              "rotation": (-10, 10),
+              "rotation": [-30, 30],
               "flip": True,
-              "brightness": (0.8, 1.2)
+              "brightness": [0.8, 1.2]
           }
       )
 
@@ -261,33 +259,28 @@ MemoryManager
 
    .. code-block:: python
 
-      manager = MemoryManager(
-          max_memory=0.8,  # 80% of available memory
-          auto_cleanup=True
-      )
+      manager = MemoryManager(max_memory=1024**3)  # 1GB
 
    Advanced memory management with monitoring:
 
    .. code-block:: python
 
-      manager = MemoryManager(
-          max_memory=0.8,
-          auto_cleanup=True,
-          monitor_interval=1.0,
-          warning_threshold=0.9
-      )
+      manager = MemoryManager(max_memory=1024**3)
+      stats = manager.monitor(interval=1.0)
+      print(f"Memory usage: {stats['current_usage']}")
 
    .. rubric:: Methods
 
    .. automethod:: __init__
    .. automethod:: allocate
+   .. automethod:: deallocate
    .. automethod:: free
    .. automethod:: get_usage
    .. automethod:: cleanup
    .. automethod:: monitor
 
 Cache
-~~~~
+~~~~~
 
 .. autoclass:: jax_dataloader.memory.Cache
    :members:
@@ -389,29 +382,22 @@ Transform
 
    .. code-block:: python
 
-      transform = Transform(
-          fn=lambda x: x + 1,
-          key=random.PRNGKey(0)
-      )
+      transform = Transform()
+      transform.add(lambda x: x * 2)
 
-   Advanced transformation with multiple operations:
+   Advanced transformation with chaining:
 
    .. code-block:: python
 
-      def augment_fn(batch, key):
-          key1, key2 = random.split(key)
-          noise = random.normal(key1, batch.shape) * 0.1
-          angle = random.uniform(key2, minval=-0.1, maxval=0.1)
-          return jnp.rot90(batch + noise, k=int(angle * 10))
-
-      transform = Transform(
-          fn=augment_fn,
-          key=random.PRNGKey(0)
-      )
+      transform = Transform()
+      transform.add(lambda x: x * 2)
+      transform.add(lambda x: x + 1)
+      transform.add(lambda x: jnp.clip(x, 0, 1))
 
    .. rubric:: Methods
 
    .. automethod:: __init__
+   .. automethod:: add
    .. automethod:: apply
    .. automethod:: compose
    .. automethod:: chain
@@ -423,93 +409,21 @@ DataLoaderError
 ~~~~~~~~~~~~
 
 .. autoexception:: jax_dataloader.exceptions.DataLoaderError
-   :members:
-   :show-inheritance:
-
-   .. rubric:: Examples
-
-   .. code-block:: python
-
-      try:
-          dataloader = DataLoader(data=None)
-      except DataLoaderError as e:
-          print(f"Error: {e}")
 
 ConfigurationError
 ~~~~~~~~~~~~~~~
 
 .. autoexception:: jax_dataloader.exceptions.ConfigurationError
-   :members:
-   :show-inheritance:
-
-   .. rubric:: Examples
-
-   .. code-block:: python
-
-      try:
-          config = DataLoaderConfig(batch_size=-1)
-      except ConfigurationError as e:
-          print(f"Error: {e}")
 
 MemoryError
 ~~~~~~~~~
 
 .. autoexception:: jax_dataloader.exceptions.MemoryError
-   :members:
-   :show-inheritance:
-
-   .. rubric:: Examples
-
-   .. code-block:: python
-
-      try:
-          dataloader = DataLoader(data=large_data)
-          dataloader.optimize_memory()
-      except MemoryError as e:
-          print(f"Error: {e}")
 
 Utility Functions
 --------------
 
 .. autofunction:: jax_dataloader.utils.get_available_memory
-   :noindex:
-
-   .. rubric:: Examples
-
-   .. code-block:: python
-
-      memory = get_available_memory()
-      print(f"Available memory: {memory / 1024**3:.2f} GB")
-
 .. autofunction:: jax_dataloader.utils.calculate_batch_size
-   :noindex:
-
-   .. rubric:: Examples
-
-   .. code-block:: python
-
-      batch_size = calculate_batch_size(
-          total_size=10000,
-          memory_fraction=0.8
-      )
-      print(f"Recommended batch size: {batch_size}")
-
 .. autofunction:: jax_dataloader.utils.get_device_count
-   :noindex:
-
-   .. rubric:: Examples
-
-   .. code-block:: python
-
-      num_devices = get_device_count()
-      print(f"Number of available devices: {num_devices}")
-
-.. autofunction:: jax_dataloader.utils.format_size
-   :noindex:
-
-   .. rubric:: Examples
-
-   .. code-block:: python
-
-      size = format_size(1024**3)
-      print(f"Formatted size: {size}")  # "1.00 GB" 
+.. autofunction:: jax_dataloader.utils.format_size 

@@ -1,7 +1,78 @@
 Changelog
 =========
 
-All notable changes to JAX DataLoader will be documented in this file.
+All notable changes to this project will be documented in this file.
+
+The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
+and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
+
+[Unreleased]
+------------
+
+Added
+~~~~~
+- Initial release of JAX DataLoader
+- Support for loading CSV, JSON, and image data
+- Data transformation pipeline
+- Memory management and caching
+- Progress tracking
+- Multi-GPU support
+- Comprehensive documentation
+- Example notebooks and tutorials
+
+Changed
+~~~~~~~
+- None
+
+Deprecated
+~~~~~~~~~
+- None
+
+Removed
+~~~~~~~
+- None
+
+Fixed
+~~~~~
+- None
+
+Security
+~~~~~~~~
+- None
+
+[0.1.7] - 2025-03-30
+-------------------
+
+Added
+~~~~~
+- Initial release of JAX DataLoader
+- Support for loading CSV, JSON, and image data
+- Data transformation pipeline
+- Memory management and caching
+- Progress tracking
+- Multi-GPU support
+- Comprehensive documentation
+- Example notebooks and tutorials
+
+Changed
+~~~~~~~
+- None
+
+Deprecated
+~~~~~~~~~
+- None
+
+Removed
+~~~~~~~
+- None
+
+Fixed
+~~~~~
+- None
+
+Security
+~~~~~~~~
+- None
 
 [0.1.6] - 2025-03-30
 -------------------

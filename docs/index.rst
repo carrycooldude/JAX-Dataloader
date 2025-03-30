@@ -9,6 +9,7 @@ JAX DataLoader is a high-performance data loading library for JAX applications, 
 
    installation
    usage
+   tutorials
    api
    examples
    changelog
@@ -76,6 +77,16 @@ Here's a simple example of how to use JAX DataLoader:
        print(f"Batch shape: {batch_data.shape}")
 
 For more detailed examples and usage instructions, see the :doc:`usage` guide.
+
+Documentation Sections
+--------------------
+
+* :doc:`installation` - Installation guide and requirements
+* :doc:`usage` - Usage guide with examples
+* :doc:`tutorials` - Step-by-step tutorials for common use cases
+* :doc:`api` - Complete API reference
+* :doc:`examples` - Detailed examples for various scenarios
+* :doc:`changelog` - Version history and changes
 
 Indices and tables
 ==================

@@ -3,7 +3,7 @@ Changelog
 
 All notable changes to JAX DataLoader will be documented in this file.
 
-[0.1.2] - 2024-03-21
+[0.1.2] - 2025-03-30
 -------------------
 
 Changed

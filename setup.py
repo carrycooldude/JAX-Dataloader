@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="jax-dataloaders",
-    version="0.1.6",
+    version="0.1.7",
     author="Kartikey Rawat",
     author_email="rawatkari554@gmail.com",
     description="A high-performance data loading library for JAX applications",
@@ -21,13 +21,13 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=requirements,
     include_package_data=True,
     package_data={

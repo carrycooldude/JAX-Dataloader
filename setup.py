@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="jax-dataloaders",
-    version="0.1.4",
+    version="0.1.5",
     author="Kartikey Rawat",
     author_email="rawatkari554@gmail.com",
     description="A high-performance data loading library for JAX applications",

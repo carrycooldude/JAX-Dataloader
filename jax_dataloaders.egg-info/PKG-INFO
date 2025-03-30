@@ -1,21 +1,26 @@
 Metadata-Version: 2.1
 Name: jax-dataloaders
-Version: 0.1.1
-Summary: A high-performance data loading library for JAX
-Home-page: https://github.com/yourusername/jax-dataloader
+Version: 0.1.4
+Summary: A high-performance data loading library for JAX applications
+Home-page: https://github.com/carrycooldude/JAX-Dataloader
 Author: Kartikey Rawat
-Author-email: your.email@example.com
+Author-email: rawatkari554@gmail.com
 Classifier: Development Status :: 3 - Alpha
-Classifier: Intended Audience :: Science/Research
+Classifier: Intended Audience :: Developers
 Classifier: License :: OSI Approved :: MIT License
-Classifier: Operating System :: OS Independent
 Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
 Classifier: Programming Language :: Python :: 3.8
 Classifier: Programming Language :: Python :: 3.9
 Classifier: Programming Language :: Python :: 3.10
-Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
-Requires-Python: >=3.8
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.7
 Description-Content-Type: text/markdown
+Provides-Extra: dev
+Provides-Extra: csv
+Provides-Extra: json
+Provides-Extra: image
+Provides-Extra: all
 License-File: LICENSE
 
 # JAX DataLoader

@@ -3,6 +3,26 @@ Changelog
 
 All notable changes to JAX DataLoader will be documented in this file.
 
+[0.1.5] - 2025-03-30
+-------------------
+
+Added
+~~~~
+* Fixed module import issues in documentation
+* Added missing module directories
+* Improved documentation structure
+
+Changed
+~~~~~~~
+* Updated package version to 0.1.5
+* Enhanced module organization
+
+Fixed
+~~~~
+* Documentation build errors
+* Missing module imports
+* Title underline formatting issues
+
 [0.1.4] - 2025-03-30
 -------------------
 

@@ -72,7 +72,7 @@ for batch_data, batch_labels in dataloader:
 
 ## Documentation
 
-For detailed documentation, visit [https://jax-dataloader.readthedocs.io/](https://jax-dataloader.readthedocs.io/).
+For detailed documentation, visit [https://carrycooldude.github.io/JAX-Dataloader/](https://carrycooldude.github.io/JAX-Dataloader/).
 
 ## Development
 

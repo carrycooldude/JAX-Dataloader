@@ -1,0 +1,13 @@
+[package]
+name = "jax_loader"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "jax_loader"
+crate-type = ["cdylib"]
+
+[dependencies]
+rand = "0.8"
+crossbeam = "0.8"
+libc = "0.2" 

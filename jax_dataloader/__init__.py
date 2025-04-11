@@ -1,6 +1,6 @@
 """JAX DataLoader - A high-performance data loading library for JAX applications."""
 
-from .jax_dataloader import DataLoader, DataLoaderConfig
+from .jax_dataloader import JAXDataLoader
 from .data import BaseLoader, CSVLoader, JSONLoader, ImageLoader
 from .memory import MemoryManager, Cache
 from .progress import ProgressTracker

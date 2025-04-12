@@ -66,9 +66,7 @@ def benchmark_dataloaders(data_size=100000, feature_size=1024, batch_size=32, nu
         data,
         batch_size=batch_size,
         shuffle=True,
-        pinned_memory=(device == 'gpu'),  # Enable pinned memory for GPU
-        use_rust=False,  # Use Python backend
-        device=device  # Use specified device
+        num_workers=2
     )
     
     # Warmup
@@ -255,11 +253,8 @@ def run_benchmarks(
                     jax_loader = JAXDataLoader(
                         dataset,
                         batch_size=batch_size,
-                        num_workers=num_workers,
-                        prefetch_size=num_workers,
-                        pinned_memory=True,
-                        device=device,
-                        use_rust=False  # Use Python backend for now
+                        shuffle=True,
+                        num_workers=num_workers
                     )
                     jax_time, jax_memory, _ = benchmark_loader(
                         jax_loader, device=device, profile=profile
@@ -371,56 +366,68 @@ def plot_results(results: Dict[str, Dict[str, List[float]]]):
     # Save detailed results to CSV
     df.to_csv('benchmark_results.csv', index=False)
 
-def benchmark_framework(framework: str, data: np.ndarray, batch_size: int, device: str, num_epochs: int = 2) -> float:
-    """Benchmark a single framework"""
+def benchmark_framework(framework: str, data: np.ndarray, batch_size: int, device: str, num_epochs: int = 3) -> float:
+    """Benchmark a single framework with consistent warmup and synchronization"""
+    gc.collect()  # Clean up memory before benchmark
+    
     if framework == 'jax':
-        # Pre-compile the computation function
+        # Pre-compile JAX operations and move data to device
+        data = jnp.asarray(data)
+        if device == 'gpu':
+            data = jax.device_put(data, jax.devices('gpu')[0])
+
+        # Pre-compile computation
         @jax.jit
-        def compute(batch):
-            return jnp.mean(jnp.square(batch))
+        def compute_mean(x):
+            return jnp.mean(jnp.square(x))
         
         loader = JAXDataLoader(
             data,
             batch_size=batch_size,
             shuffle=True,
-            num_workers=1,
-            prefetch_size=1,
-            pinned_memory=(device == 'gpu'),
-            device=device,
-            use_rust=False
+            num_workers=4,  # Increased number of workers
+            prefetch_size=4,  # Increased prefetch size
+            use_mmap=True  # Enable memory mapping
         )
         
-        # Warmup
+        # Warmup JIT and data loading
         for batch in loader:
             if device == 'gpu':
-                batch = jax.device_put(batch, device=jax.devices('gpu')[0])
-            _ = compute(batch)
+                batch = jax.device_put(batch, jax.devices('gpu')[0])
+            _ = compute_mean(batch).block_until_ready()
             break
             
+        # Benchmark with proper synchronization
         start_time = time.perf_counter()
         for _ in range(num_epochs):
             for batch in loader:
                 if device == 'gpu':
-                    batch = jax.device_put(batch, device=jax.devices('gpu')[0])
-                result = compute(batch)
-                result.block_until_ready()
+                    batch = jax.device_put(batch, jax.devices('gpu')[0])
+                result = compute_mean(batch)
+                result.block_until_ready()  # Ensure computation is complete
         end_time = time.perf_counter()
         
     elif framework == 'torch':
+        # Move data to device first
         torch_data = torch.from_numpy(data)
+        if device == 'gpu':
+            torch_data = torch_data.cuda()
+            
         torch_dataset = torch.utils.data.TensorDataset(torch_data)
         loader = torch.utils.data.DataLoader(
             torch_dataset,
             batch_size=batch_size,
             shuffle=True,
-            num_workers=2,
-            pin_memory=(device == 'gpu')
+            num_workers=4,  # Increased number of workers
+            pin_memory=(device == 'gpu'),
+            prefetch_factor=4  # Increased prefetch factor
         )
         
         # Warmup
         for batch, in loader:
             if device == 'gpu':
-                _ = batch.cuda(non_blocking=True)
+                batch = batch.cuda(non_blocking=True)
+            _ = torch.mean(torch.square(batch))
             break
             
         start_time = time.perf_counter()
@@ -434,25 +441,33 @@ def benchmark_framework(framework: str, data: np.ndarray, batch_size: int, devic
         end_time = time.perf_counter()
         
     elif framework == 'tf':
-        tf_data = tf.data.Dataset.from_tensor_slices(data)
-        loader = tf_data.shuffle(1000).batch(batch_size)
+        # Move data to device first
+        if device == 'gpu':
+            with tf.device('/GPU:0'):
+                tf_data = tf.convert_to_tensor(data)
+        else:
+            tf_data = tf.convert_to_tensor(data)
+            
+        dataset = tf.data.Dataset.from_tensor_slices(tf_data)
+        dataset = dataset.shuffle(1000).batch(batch_size).prefetch(tf.data.AUTOTUNE)
         
         # Warmup
-        for batch in loader.take(1):
-            if device == 'gpu':
-                _ = tf.identity(batch)
-            break
+        for batch in dataset.take(1):
+            _ = tf.reduce_mean(tf.square(batch))
             
         start_time = time.perf_counter()
         for _ in range(num_epochs):
-            for batch in loader:
+            for batch in dataset:
                 result = tf.reduce_mean(tf.square(batch))
                 if device == 'gpu':
                     tf.experimental.async_scope.async_scope()
         end_time = time.perf_counter()
         
     else:  # numpy
+        # Ensure data is in numpy array
+        data = np.asarray(data)
         indices = np.arange(len(data))
+        
         start_time = time.perf_counter()
         for _ in range(num_epochs):
             np.random.shuffle(indices)
@@ -507,82 +522,48 @@ def plot_benchmark_results(results: Dict[str, float], device: str):
     plt.savefig(f'benchmark_results_{device.lower()}.png', dpi=300, bbox_inches='tight')
     plt.close()
 
-def run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='cpu'):
-    """Run a quick benchmark with progress bars"""
+def run_quick_benchmark(data_size=500000, feature_size=1024, batch_size=512, device='cpu'):
+    """Run a quick benchmark with memory-efficient parameters"""
     print(f"\nRunning quick benchmark on {device.upper()}...")
     print(f"Dataset size: {data_size}, Feature size: {feature_size}, Batch size: {batch_size}")
     
-    # Generate data
-    data = create_dataset(data_size, feature_size)
+    # Generate random data in chunks to avoid OOM
+    chunk_size = 100000
+    data = np.zeros((data_size, feature_size), dtype=np.float32)
+    for i in range(0, data_size, chunk_size):
+        end = min(i + chunk_size, data_size)
+        data[i:end] = np.random.randn(end - i, feature_size).astype(np.float32)
     
-    # Benchmark each framework
-    frameworks = ['jax', 'torch', 'tf', 'numpy']
+    # Run benchmarks
     results = {}
-    
-    for framework in tqdm(frameworks, desc="Benchmarking frameworks"):
+    for framework in ['jax', 'torch', 'tf', 'numpy']:
         time_taken = benchmark_framework(framework, data, batch_size, device)
         results[framework] = time_taken
-    
+        
     # Print results
     print("\nResults (seconds per epoch):")
-    for name, time_taken in results.items():
-        print(f"{name:20s}: {time_taken:.4f}s")
-    
-    # Calculate speedups
-    baseline = results['numpy']
+    for framework, time_taken in results.items():
+        print(f"{framework:20}: {time_taken:.4f}s")
+        
+    # Calculate speedup over NumPy baseline
+    numpy_time = results['numpy']
     print("\nSpeedup over NumPy baseline:")
-    for name, time_taken in results.items():
-        if name != 'numpy':
-            speedup = baseline / time_taken
-            print(f"{name:20s}: {speedup:.2f}x faster")
-    
+    for framework, time_taken in results.items():
+        if framework != 'numpy':
+            speedup = numpy_time / time_taken
+            print(f"{framework:20}: {speedup:.2f}x faster")
+            
     # Plot results
     plot_benchmark_results(results, device)
 
 def main():
-    parser = argparse.ArgumentParser(description='Run benchmarks for JAX DataLoader')
-    parser.add_argument('--comprehensive', action='store_true', help='Run comprehensive benchmarks')
-    args = parser.parse_args()
-    
-    if args.comprehensive:
-        # Benchmark configurations
-        dataset_sizes = [10_000, 100_000, 1_000_000]
-        batch_sizes = [32, 64, 128, 256]
-        data_types = ['float32', 'float64']
-        num_workers_list = [2, 4, 8, 16]
-        
-        print("Running CPU benchmarks...")
-        cpu_results = run_benchmarks(
-            dataset_sizes, batch_sizes, data_types,
-            device='cpu', num_workers_list=num_workers_list,
-            profile=True
-        )
-        plot_results(cpu_results)
-        
-        if jax.default_backend() == 'gpu':
-            print("\nRunning GPU benchmarks...")
-            gpu_results = run_benchmarks(
-                dataset_sizes, batch_sizes, data_types,
-                device='gpu', num_workers_list=num_workers_list,
-                profile=True
-            )
-            plot_results(gpu_results)
-
-        # Run small dataset benchmark
-        print("\nRunning small dataset benchmark...")
-        benchmark_dataloaders(data_size=10000, feature_size=1024, batch_size=32)
-        
-        # Run large dataset benchmark
-        print("\nRunning large dataset benchmark...")
-        benchmark_dataloaders(data_size=100000, feature_size=2048, batch_size=64)
+    """Main function to run benchmarks"""
+    if jax.default_backend() == 'gpu':
+        print("GPU detected, running GPU benchmark...")
+        run_quick_benchmark(data_size=500000, feature_size=1024, batch_size=512, device='gpu')
     else:
-        # Run quick benchmark
-        if jax.default_backend() == 'gpu':
-            print("GPU detected, running GPU benchmark...")
-            run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='gpu')
-        else:
-            print("No GPU detected, running CPU benchmark...")
-            run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='cpu')
+        print("No GPU detected, running CPU benchmark...")
+        run_quick_benchmark(data_size=500000, feature_size=1024, batch_size=512, device='cpu')
 
 if __name__ == "__main__":
     main()

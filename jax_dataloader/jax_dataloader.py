@@ -68,51 +68,51 @@ class JAXDataLoader:
 
     def _init_python_backend(self):
         """Initialize Python backend with optimizations"""
-        self._preallocate_batch_memory()
+        # Pre-shuffle and pre-compute all batch indices
+        self._indices = np.arange(len(self.dataset))
+        if self.shuffle:
+            np.random.shuffle(self._indices)
         
-        # Initialize thread pool for parallel batch loading
-        self._executor = ThreadPoolExecutor(max_workers=self.num_workers)
-        self._batch_queue = queue.Queue(maxsize=self.prefetch_size)
-        self._stop_signal = object()
+        # Pre-compute all batch indices for the entire dataset
+        self._batch_indices = np.array([
+            self._indices[i:i + self.batch_size]
+            for i in range(0, len(self._indices), self.batch_size)
+            if len(self._indices[i:i + self.batch_size]) == self.batch_size
+        ])
         
-        # Start prefetching thread
-        self._prefetch_thread = threading.Thread(target=self._prefetch_batches)
-        self._prefetch_thread.daemon = True
-        self._prefetch_thread.start()
-
-    def _preallocate_batch_memory(self):
-        """Pre-allocate memory for batches"""
-        sample_shape = self.dataset.shape[1:]
-        self._batch_buffer = jnp.zeros((self.batch_size, *sample_shape), dtype=self.dataset.dtype)
+        # Pre-allocate memory for all batches
+        self._batch_buffer = jnp.zeros(
+            (len(self._batch_indices), self.batch_size, *self.dataset.shape[1:]),
+            dtype=self.dataset.dtype
+        )
+        
         if self.pinned_memory and self.device:
             self._batch_buffer = jax.device_put(self._batch_buffer, device=jax.devices(self.device)[0])
+        
+        # Pre-load all batches using JIT-compiled function
+        self._batches = self._batch_loader(self.dataset, jnp.array(self._batch_indices))
+        self._current_idx = 0
 
     @staticmethod
     @jax.jit
     def _batch_loader(dataset: jnp.ndarray, indices: jnp.ndarray) -> jnp.ndarray:
-        """JIT-compiled batch loading function"""
-        return jnp.take(dataset, indices, axis=0)
+        """JIT-compiled batch loading function with vectorized operations"""
+        # Reshape indices for vectorized indexing
+        batch_size = indices.shape[1]
+        indices = indices.reshape(-1)
+        # Use advanced indexing for faster access
+        batches = dataset[indices]
+        # Reshape back to original batch structure
+        return batches.reshape(-1, batch_size, *dataset.shape[1:])
 
-    def _prefetch_batches(self):
-        """Prefetch batches in background"""
-        indices = np.arange(len(self.dataset))
-        if self.shuffle:
-            np.random.shuffle(indices)
-        
-        for i in range(0, len(indices), self.batch_size):
-            batch_indices = indices[i:i + self.batch_size]
-            if len(batch_indices) < self.batch_size:
-                break
-            
-            # Submit batch loading task to thread pool
-            future = self._executor.submit(
-                self._batch_loader,
-                self.dataset,
-                jnp.array(batch_indices)
-            )
-            self._batch_queue.put(future)
-        
-        self._batch_queue.put(self._stop_signal)
+    def _python_iterator(self):
+        """Iterator using Python backend with pre-loaded batches"""
+        while self._current_idx < len(self._batches):
+            batch = self._batches[self._current_idx]
+            if self.pinned_memory and self.device:
+                batch = jax.device_put(batch, device=jax.devices(self.device)[0])
+            self._current_idx += 1
+            yield batch
 
     def __iter__(self):
         """Return iterator based on backend"""
@@ -131,25 +131,11 @@ class JAXDataLoader:
                 batch = jax.device_put(batch, device=self.device)
             yield batch
 
-    def _python_iterator(self):
-        """Iterator using Python backend"""
-        while True:
-            future = self._batch_queue.get()
-            if future is self._stop_signal:
-                break
-            
-            batch = future.result()
-            if self.pinned_memory and self.device:
-                batch = jax.device_put(batch, device=jax.devices(self.device)[0])
-            yield batch
-
     def __len__(self):
         """Return number of batches"""
-        return len(self.dataset) // self.batch_size
+        return len(self._batch_indices)
 
     def __del__(self):
         """Cleanup resources"""
-        if hasattr(self, '_executor'):
-            self._executor.shutdown(wait=True)
         if hasattr(self, 'rust_loader'):
             del self.rust_loader

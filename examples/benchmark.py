@@ -1,14 +1,7 @@
 import os
-# Enable GPU if available
-if jax.default_backend() == 'gpu':
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'  # Enable first GPU
-    os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'  # Prevent OOM errors
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # Reduce TensorFlow warnings
-else:
-    os.environ['CUDA_VISIBLE_DEVICES'] = ''  # Disable GPU if not available
-
 import time
 import numpy as np
+import jax
 import jax.numpy as jnp
 from jax_dataloader import JAXDataLoader
 import tensorflow as tf
@@ -18,14 +11,21 @@ import matplotlib.pyplot as plt
 from typing import List, Dict, Tuple
 import gc
 import psutil
-import os
-import jax
 from jax import profiler
 import seaborn as sns
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
 from tqdm import tqdm
+import argparse
+
+# Enable GPU if available
+if jax.default_backend() == 'gpu':
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'  # Enable first GPU
+    os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'  # Prevent OOM errors
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # Reduce TensorFlow warnings
+else:
+    os.environ['CUDA_VISIBLE_DEVICES'] = ''  # Disable GPU if not available
 
 def get_memory_usage() -> float:
     """Get current memory usage in MB"""
@@ -374,19 +374,27 @@ def plot_results(results: Dict[str, Dict[str, List[float]]]):
 def benchmark_framework(framework: str, data: np.ndarray, batch_size: int, device: str, num_epochs: int = 2) -> float:
     """Benchmark a single framework"""
     if framework == 'jax':
+        # Pre-compile the computation function
+        @jax.jit
+        def compute(batch):
+            return jnp.mean(jnp.square(batch))
+        
         loader = JAXDataLoader(
             data,
             batch_size=batch_size,
             shuffle=True,
+            num_workers=1,
+            prefetch_size=1,
             pinned_memory=(device == 'gpu'),
-            use_rust=False,
-            device=device
+            device=device,
+            use_rust=False
         )
         
         # Warmup
         for batch in loader:
             if device == 'gpu':
-                _ = jax.device_put(batch, device=jax.devices('gpu')[0])
+                batch = jax.device_put(batch, device=jax.devices('gpu')[0])
+            _ = compute(batch)
             break
             
         start_time = time.perf_counter()
@@ -394,7 +402,7 @@ def benchmark_framework(framework: str, data: np.ndarray, batch_size: int, devic
             for batch in loader:
                 if device == 'gpu':
                     batch = jax.device_put(batch, device=jax.devices('gpu')[0])
-                result = jax.jit(lambda x: jnp.mean(x))(batch)
+                result = compute(batch)
                 result.block_until_ready()
         end_time = time.perf_counter()
         
@@ -420,7 +428,7 @@ def benchmark_framework(framework: str, data: np.ndarray, batch_size: int, devic
             for batch, in loader:
                 if device == 'gpu':
                     batch = batch.cuda(non_blocking=True)
-                result = torch.mean(batch)
+                result = torch.mean(torch.square(batch))
                 if device == 'gpu':
                     torch.cuda.synchronize()
         end_time = time.perf_counter()
@@ -438,7 +446,7 @@ def benchmark_framework(framework: str, data: np.ndarray, batch_size: int, devic
         start_time = time.perf_counter()
         for _ in range(num_epochs):
             for batch in loader:
-                result = tf.reduce_mean(batch)
+                result = tf.reduce_mean(tf.square(batch))
                 if device == 'gpu':
                     tf.experimental.async_scope.async_scope()
         end_time = time.perf_counter()
@@ -453,10 +461,51 @@ def benchmark_framework(framework: str, data: np.ndarray, batch_size: int, devic
                 if len(batch_idx) < batch_size:
                     continue
                 batch = data[batch_idx]
-                result = np.mean(batch)
+                result = np.mean(np.square(batch))
         end_time = time.perf_counter()
     
     return (end_time - start_time) / num_epochs
+
+def plot_benchmark_results(results: Dict[str, float], device: str):
+    """Plot benchmark results with visualizations"""
+    # Create figure with subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+    
+    # Bar chart for absolute times
+    frameworks = list(results.keys())
+    times = list(results.values())
+    
+    bars = ax1.bar(frameworks, times, color=['#4e79a7', '#f28e2b', '#e15759', '#76b7b2'])
+    ax1.set_title(f'Time per Epoch ({device.upper()})')
+    ax1.set_ylabel('Seconds')
+    ax1.set_xlabel('Framework')
+    
+    # Add value labels on bars
+    for bar in bars:
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., height,
+                f'{height:.4f}s',
+                ha='center', va='bottom')
+    
+    # Speedup chart
+    baseline = results['numpy']
+    speedups = {k: baseline/v for k, v in results.items() if k != 'numpy'}
+    
+    bars = ax2.bar(speedups.keys(), speedups.values(), color=['#4e79a7', '#f28e2b', '#e15759'])
+    ax2.set_title(f'Speedup over NumPy ({device.upper()})')
+    ax2.set_ylabel('Speedup (x)')
+    ax2.set_xlabel('Framework')
+    
+    # Add value labels on bars
+    for bar in bars:
+        height = bar.get_height()
+        ax2.text(bar.get_x() + bar.get_width()/2., height,
+                f'{height:.2f}x',
+                ha='center', va='bottom')
+    
+    plt.tight_layout()
+    plt.savefig(f'benchmark_results_{device.lower()}.png', dpi=300, bbox_inches='tight')
+    plt.close()
 
 def run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='cpu'):
     """Run a quick benchmark with progress bars"""
@@ -486,46 +535,54 @@ def run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='
         if name != 'numpy':
             speedup = baseline / time_taken
             print(f"{name:20s}: {speedup:.2f}x faster")
+    
+    # Plot results
+    plot_benchmark_results(results, device)
 
 def main():
-    # Benchmark configurations
-    dataset_sizes = [10_000, 100_000, 1_000_000]
-    batch_sizes = [32, 64, 128, 256]
-    data_types = ['float32', 'float64']
-    num_workers_list = [2, 4, 8, 16]
+    parser = argparse.ArgumentParser(description='Run benchmarks for JAX DataLoader')
+    parser.add_argument('--comprehensive', action='store_true', help='Run comprehensive benchmarks')
+    args = parser.parse_args()
     
-    print("Running CPU benchmarks...")
-    cpu_results = run_benchmarks(
-        dataset_sizes, batch_sizes, data_types,
-        device='cpu', num_workers_list=num_workers_list,
-        profile=True
-    )
-    plot_results(cpu_results)
-    
-    if jax.default_backend() == 'gpu':
-        print("\nRunning GPU benchmarks...")
-        gpu_results = run_benchmarks(
+    if args.comprehensive:
+        # Benchmark configurations
+        dataset_sizes = [10_000, 100_000, 1_000_000]
+        batch_sizes = [32, 64, 128, 256]
+        data_types = ['float32', 'float64']
+        num_workers_list = [2, 4, 8, 16]
+        
+        print("Running CPU benchmarks...")
+        cpu_results = run_benchmarks(
             dataset_sizes, batch_sizes, data_types,
-            device='gpu', num_workers_list=num_workers_list,
+            device='cpu', num_workers_list=num_workers_list,
             profile=True
         )
-        plot_results(gpu_results)
+        plot_results(cpu_results)
+        
+        if jax.default_backend() == 'gpu':
+            print("\nRunning GPU benchmarks...")
+            gpu_results = run_benchmarks(
+                dataset_sizes, batch_sizes, data_types,
+                device='gpu', num_workers_list=num_workers_list,
+                profile=True
+            )
+            plot_results(gpu_results)
 
-    # Run small dataset benchmark
-    print("\nRunning small dataset benchmark...")
-    benchmark_dataloaders(data_size=10000, feature_size=1024, batch_size=32)
-    
-    # Run large dataset benchmark
-    print("\nRunning large dataset benchmark...")
-    benchmark_dataloaders(data_size=100000, feature_size=2048, batch_size=64)
-
-    # Run quick benchmark
-    if jax.default_backend() == 'gpu':
-        print("GPU detected, running GPU benchmark...")
-        run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='gpu')
+        # Run small dataset benchmark
+        print("\nRunning small dataset benchmark...")
+        benchmark_dataloaders(data_size=10000, feature_size=1024, batch_size=32)
+        
+        # Run large dataset benchmark
+        print("\nRunning large dataset benchmark...")
+        benchmark_dataloaders(data_size=100000, feature_size=2048, batch_size=64)
     else:
-        print("No GPU detected, running CPU benchmark...")
-        run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='cpu')
+        # Run quick benchmark
+        if jax.default_backend() == 'gpu':
+            print("GPU detected, running GPU benchmark...")
+            run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='gpu')
+        else:
+            print("No GPU detected, running CPU benchmark...")
+            run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='cpu')
 
 if __name__ == "__main__":
     main()

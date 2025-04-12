@@ -1,3 +1,12 @@
+import os
+# Enable GPU if available
+if jax.default_backend() == 'gpu':
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'  # Enable first GPU
+    os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'  # Prevent OOM errors
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # Reduce TensorFlow warnings
+else:
+    os.environ['CUDA_VISIBLE_DEVICES'] = ''  # Disable GPU if not available
+
 import time
 import numpy as np
 import jax.numpy as jnp
@@ -16,6 +25,7 @@ import seaborn as sns
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
+from tqdm import tqdm
 
 def get_memory_usage() -> float:
     """Get current memory usage in MB"""
@@ -31,7 +41,7 @@ def pin_cpu_cores():
     cpu_count = psutil.cpu_count(logical=False)
     os.sched_setaffinity(0, range(cpu_count))
 
-def benchmark_dataloaders(data_size=100000, feature_size=1024, batch_size=32, num_epochs=5):
+def benchmark_dataloaders(data_size=100000, feature_size=1024, batch_size=32, num_epochs=5, device='cpu'):
     """Benchmark different data loading implementations"""
     pin_cpu_cores()
     
@@ -40,84 +50,98 @@ def benchmark_dataloaders(data_size=100000, feature_size=1024, batch_size=32, nu
     
     # Warm up GPU and CPU caches
     warmup_data = np.random.randn(1000, feature_size).astype(np.float32)
-    _ = jax.device_put(warmup_data)
-    _ = torch.from_numpy(warmup_data).cuda()
-    _ = tf.convert_to_tensor(warmup_data)
+    if device == 'gpu':
+        # Warm up JAX GPU
+        _ = jax.device_put(warmup_data, device=jax.devices('gpu')[0])
+        # Warm up PyTorch CUDA
+        _ = torch.from_numpy(warmup_data).cuda()
+        # Warm up TensorFlow GPU
+        _ = tf.convert_to_tensor(warmup_data)
     
     results = {}
     
     # Benchmark JAX DataLoader with Python backend
-    print("\nBenchmarking JAX DataLoader...")
+    print(f"\nBenchmarking JAX DataLoader on {device.upper()}...")
     jax_loader = JAXDataLoader(
         data,
         batch_size=batch_size,
         shuffle=True,
-        pinned_memory=True,
-        use_rust=False  # Use Python backend
+        pinned_memory=(device == 'gpu'),  # Enable pinned memory for GPU
+        use_rust=False,  # Use Python backend
+        device=device  # Use specified device
     )
     
     # Warmup
     for batch in jax_loader:
-        _ = jax.device_put(batch)
+        if device == 'gpu':
+            _ = jax.device_put(batch, device=jax.devices('gpu')[0])
         break
         
     start_time = time.perf_counter()
     for epoch in range(num_epochs):
         for batch in jax_loader:
             # Simulate computation
+            if device == 'gpu':
+                batch = jax.device_put(batch, device=jax.devices('gpu')[0])
             result = jax.jit(lambda x: jnp.mean(jnp.square(x)))(batch)
             result.block_until_ready()
     end_time = time.perf_counter()
     results['JAX DataLoader'] = (end_time - start_time) / num_epochs
     
     # Benchmark PyTorch DataLoader
-    print("Benchmarking PyTorch DataLoader...")
+    print(f"Benchmarking PyTorch DataLoader on {device.upper()}...")
     torch_data = torch.from_numpy(data)
     torch_dataset = torch.utils.data.TensorDataset(torch_data)
     torch_loader = torch.utils.data.DataLoader(
         torch_dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=8,
-        pin_memory=True,
+        num_workers=2,
+        pin_memory=(device == 'gpu'),  # Enable pinned memory for GPU
         prefetch_factor=2
     )
     
     # Warmup
     for batch, in torch_loader:
-        _ = batch.cuda()
+        if device == 'gpu':
+            _ = batch.cuda(non_blocking=True)
         break
         
     start_time = time.perf_counter()
     for epoch in range(num_epochs):
         for batch, in torch_loader:
-            batch = batch.cuda(non_blocking=True)
+            if device == 'gpu':
+                batch = batch.cuda(non_blocking=True)
             # Simulate computation
             result = torch.mean(torch.square(batch))
-            torch.cuda.synchronize()
+            if device == 'gpu':
+                torch.cuda.synchronize()
     end_time = time.perf_counter()
     results['PyTorch DataLoader'] = (end_time - start_time) / num_epochs
     
     # Benchmark TensorFlow DataLoader
-    print("Benchmarking TensorFlow DataLoader...")
+    print(f"Benchmarking TensorFlow DataLoader on {device.upper()}...")
     tf_data = tf.data.Dataset.from_tensor_slices(data)
     tf_loader = tf_data.shuffle(1000).batch(batch_size).prefetch(tf.data.AUTOTUNE)
     
     # Warmup
     for batch in tf_loader.take(1):
-        _ = tf.identity(batch)
+        if device == 'gpu':
+            _ = tf.identity(batch)
+        break
         
     start_time = time.perf_counter()
     for epoch in range(num_epochs):
         for batch in tf_loader:
             # Simulate computation
             result = tf.reduce_mean(tf.square(batch))
-            tf.experimental.async_scope.async_scope()
+            if device == 'gpu':
+                tf.experimental.async_scope.async_scope()
     end_time = time.perf_counter()
     results['TensorFlow DataLoader'] = (end_time - start_time) / num_epochs
     
     # Benchmark NumPy (baseline)
-    print("Benchmarking NumPy (baseline)...")
+    print(f"Benchmarking NumPy (baseline) on {device.upper()}...")
     indices = np.arange(len(data))
     
     start_time = time.perf_counter()
@@ -134,13 +158,13 @@ def benchmark_dataloaders(data_size=100000, feature_size=1024, batch_size=32, nu
     results['NumPy'] = (end_time - start_time) / num_epochs
     
     # Print results
-    print("\nResults (seconds per epoch):")
+    print(f"\nResults on {device.upper()} (seconds per epoch):")
     for name, time_taken in results.items():
         print(f"{name:20s}: {time_taken:.4f}s")
     
     # Calculate speedups
     baseline = results['NumPy']
-    print("\nSpeedup over NumPy baseline:")
+    print(f"\nSpeedup over NumPy baseline on {device.upper()}:")
     for name, time_taken in results.items():
         if name != 'NumPy':
             speedup = baseline / time_taken
@@ -347,6 +371,122 @@ def plot_results(results: Dict[str, Dict[str, List[float]]]):
     # Save detailed results to CSV
     df.to_csv('benchmark_results.csv', index=False)
 
+def benchmark_framework(framework: str, data: np.ndarray, batch_size: int, device: str, num_epochs: int = 2) -> float:
+    """Benchmark a single framework"""
+    if framework == 'jax':
+        loader = JAXDataLoader(
+            data,
+            batch_size=batch_size,
+            shuffle=True,
+            pinned_memory=(device == 'gpu'),
+            use_rust=False,
+            device=device
+        )
+        
+        # Warmup
+        for batch in loader:
+            if device == 'gpu':
+                _ = jax.device_put(batch, device=jax.devices('gpu')[0])
+            break
+            
+        start_time = time.perf_counter()
+        for _ in range(num_epochs):
+            for batch in loader:
+                if device == 'gpu':
+                    batch = jax.device_put(batch, device=jax.devices('gpu')[0])
+                result = jax.jit(lambda x: jnp.mean(x))(batch)
+                result.block_until_ready()
+        end_time = time.perf_counter()
+        
+    elif framework == 'torch':
+        torch_data = torch.from_numpy(data)
+        torch_dataset = torch.utils.data.TensorDataset(torch_data)
+        loader = torch.utils.data.DataLoader(
+            torch_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=2,
+            pin_memory=(device == 'gpu')
+        )
+        
+        # Warmup
+        for batch, in loader:
+            if device == 'gpu':
+                _ = batch.cuda(non_blocking=True)
+            break
+            
+        start_time = time.perf_counter()
+        for _ in range(num_epochs):
+            for batch, in loader:
+                if device == 'gpu':
+                    batch = batch.cuda(non_blocking=True)
+                result = torch.mean(batch)
+                if device == 'gpu':
+                    torch.cuda.synchronize()
+        end_time = time.perf_counter()
+        
+    elif framework == 'tf':
+        tf_data = tf.data.Dataset.from_tensor_slices(data)
+        loader = tf_data.shuffle(1000).batch(batch_size)
+        
+        # Warmup
+        for batch in loader.take(1):
+            if device == 'gpu':
+                _ = tf.identity(batch)
+            break
+            
+        start_time = time.perf_counter()
+        for _ in range(num_epochs):
+            for batch in loader:
+                result = tf.reduce_mean(batch)
+                if device == 'gpu':
+                    tf.experimental.async_scope.async_scope()
+        end_time = time.perf_counter()
+        
+    else:  # numpy
+        indices = np.arange(len(data))
+        start_time = time.perf_counter()
+        for _ in range(num_epochs):
+            np.random.shuffle(indices)
+            for i in range(0, len(indices), batch_size):
+                batch_idx = indices[i:i + batch_size]
+                if len(batch_idx) < batch_size:
+                    continue
+                batch = data[batch_idx]
+                result = np.mean(batch)
+        end_time = time.perf_counter()
+    
+    return (end_time - start_time) / num_epochs
+
+def run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='cpu'):
+    """Run a quick benchmark with progress bars"""
+    print(f"\nRunning quick benchmark on {device.upper()}...")
+    print(f"Dataset size: {data_size}, Feature size: {feature_size}, Batch size: {batch_size}")
+    
+    # Generate data
+    data = create_dataset(data_size, feature_size)
+    
+    # Benchmark each framework
+    frameworks = ['jax', 'torch', 'tf', 'numpy']
+    results = {}
+    
+    for framework in tqdm(frameworks, desc="Benchmarking frameworks"):
+        time_taken = benchmark_framework(framework, data, batch_size, device)
+        results[framework] = time_taken
+    
+    # Print results
+    print("\nResults (seconds per epoch):")
+    for name, time_taken in results.items():
+        print(f"{name:20s}: {time_taken:.4f}s")
+    
+    # Calculate speedups
+    baseline = results['numpy']
+    print("\nSpeedup over NumPy baseline:")
+    for name, time_taken in results.items():
+        if name != 'numpy':
+            speedup = baseline / time_taken
+            print(f"{name:20s}: {speedup:.2f}x faster")
+
 def main():
     # Benchmark configurations
     dataset_sizes = [10_000, 100_000, 1_000_000]
@@ -378,6 +518,14 @@ def main():
     # Run large dataset benchmark
     print("\nRunning large dataset benchmark...")
     benchmark_dataloaders(data_size=100000, feature_size=2048, batch_size=64)
+
+    # Run quick benchmark
+    if jax.default_backend() == 'gpu':
+        print("GPU detected, running GPU benchmark...")
+        run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='gpu')
+    else:
+        print("No GPU detected, running CPU benchmark...")
+        run_quick_benchmark(data_size=1000, feature_size=32, batch_size=32, device='cpu')
 
 if __name__ == "__main__":
     main()

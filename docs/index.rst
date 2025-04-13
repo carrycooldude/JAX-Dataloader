@@ -12,6 +12,8 @@ Features
 * **Easy to Use**: Simple API with familiar interface
 * **Type Safe**: Full type hints and static type checking
 * **Extensible**: Easy to add custom data loaders
+* **Benchmarking**: Comprehensive performance analysis tools for CPU and multi-device setups
+* **Performance Optimization**: Advanced tools for analyzing and optimizing data loading performance
 
 Quick Start
 ----------

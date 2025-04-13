@@ -6,197 +6,108 @@ All notable changes to this project will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
-[Unreleased]
------------
+[0.1.10] - 2025-04-13
+-------------------
 
 Added
 ~~~~~
-
-- Support for multi-GPU training
-- Memory optimization features
-- Progress tracking with ETA
-- Data augmentation pipeline
-- Caching mechanism for faster data loading
-- Comprehensive documentation and examples
+- Enhanced benchmarking capabilities with CPU performance analysis
+- New optimization improvements for data loading
 
 Changed
 ~~~~~~~
-
-- Improved error handling and reporting
-- Enhanced memory management
-- Better progress tracking with more detailed statistics
-- Optimized data loading performance
-
-Fixed
-~~~~~
-
-- Memory leaks in data loading
-- Race conditions in multi-GPU setup
-- Progress tracking accuracy
-- Cache invalidation issues
-
-Deprecated
-~~~~~~~~~
-
-- Old progress tracking API
-- Legacy memory management functions
-- Deprecated data loading methods
-
-[0.1.7] - 2025-03-30
--------------------
-
-Added
-~~~~~
-
-- Support for custom data formats
-- Enhanced error handling
-- Progress tracking improvements
-- Memory optimization features
-
-Changed
-~~~~~~~
-
-- Updated documentation
-- Improved test coverage
-- Enhanced performance
-- Better error messages
-
-Fixed
-~~~~~
-
-- Memory leaks
-- Progress tracking bugs
-- Data loading issues
-- Cache invalidation
-
-Deprecated
-~~~~~~~~~
-
-- Legacy data loading methods
-- Old progress tracking API
-- Deprecated memory management
-
-[0.1.6] - 2025-03-30
--------------------
-
-Added
-~~~~
-
-- Multi-GPU support
-- Memory optimization
-- Progress tracking
-- Data augmentation
-
-Fixed
-~~~~
-
-- Memory leaks
-- Performance issues
-- Documentation errors
-
-[0.1.5] - 2025-03-30
--------------------
-
-Added
-~~~~
-
-- Cache mechanism
-- Progress tracking
-- Memory management
-- Error handling
-- Documentation
-
-Fixed
-~~~~
-
-- Memory issues
-- Performance bugs
-- Documentation
-
-[0.1.4] - 2025-03-30
--------------------
-
-Added
-~~~~
-
-- Data augmentation
-- Progress tracking
-- Memory management
-- Error handling
-- Documentation
-
-Fixed
-~~~~
-
-- Memory issues
-- Performance bugs
-- Documentation
-
-[0.1.3] - 2025-03-30
--------------------
-
-Added
-~~~~
-
-- Multi-GPU support
-- Memory optimization
-- Progress tracking
-- Data augmentation
-- Documentation
-- Test coverage
-
-Fixed
-~~~~
-
-- Memory leaks
-- Performance issues
-- Documentation
+- Updated benchmarking infrastructure for better performance analysis
+- Improved README documentation
 
 [0.1.2] - 2025-03-30
 -------------------
 
-- Initial release with basic functionality
+Changed
+~~~~~~~
+- Updated package name to match PyPI repository
+- Fixed GitHub Actions workflow for automated releases
 
 [0.1.1] - 2025-03-30
 -------------------
 
 Added
-~~~~
+~~~~~
+- Comprehensive examples demonstrating key features
+- Memory management with allocation stack
+- Enhanced batch size calculation for multi-GPU scenarios
+- Improved error handling and recovery
+- Progress tracking with detailed statistics
+- Data caching with automatic cleanup
+- Support for various data formats (CSV, JSON, Images)
 
-- Basic data loading
-- CSV support
-- JSON support
-- Image loading
-- Memory management
-- Progress tracking
-- Documentation
-- Test coverage
+Changed
+~~~~~~~
+- Improved memory management with better allocation tracking
+- Enhanced batch size calculation for multi-GPU scenarios
+- Better error handling and recovery mechanisms
+- Updated documentation with examples and tutorials
+- Optimized data loading performance
 
 Fixed
-~~~~
+~~~~~
+- Memory leaks in cleanup operations
+- Batch size calculation for device distribution
+- Progress tracking accuracy
+- Test reliability and coverage
+- Multi-GPU batch distribution issues
 
-- Memory leaks
-- Performance issues
-- Documentation
+Documentation
+~~~~~~~~~~~~
+- Added comprehensive examples
+- Updated README with installation and usage instructions
+- Added API documentation
+- Included example requirements and setup guide
+- Added detailed feature documentation
 
-[0.1.0] - 2025-03-30
+Examples
+~~~~~~~~
+- Added data loading demo with multiple formats
+- Included sample data generation scripts
+- Added configuration examples
+- Demonstrated key features with real-world scenarios
+
+[0.1.0] - 2025-03-19
 -------------------
 
 Added
-~~~~
+~~~~~
+- Initial release of JAX DataLoader
+- Support for multiple data formats (CSV, JSON, Images)
+- Multi-GPU support with automatic batch distribution
+- Memory management with automatic batch size tuning
+- Progress tracking and statistics
+- Data caching and prefetching
+- Type hints and documentation
 
-- Basic data loading
-- CSV support
-- JSON support
-- Image loading
-- Memory management
-- Progress tracking
-- Documentation
-- Test coverage
+Changed
+~~~~~~~
+- Improved memory management with allocation stack
+- Enhanced batch size calculation for multi-GPU scenarios
+- Better error handling and recovery
+- Updated documentation with examples
 
 Fixed
-~~~~
+~~~~~
+- Memory leaks in cleanup operations
+- Batch size calculation for device distribution
+- Progress tracking accuracy
+- Test reliability and coverage
 
-- Memory leaks
-- Performance issues
-- Documentation 
+Documentation
+~~~~~~~~~~~~
+- Added comprehensive examples
+- Updated README with installation and usage instructions
+- Added API documentation
+- Included example requirements and setup guide
+
+Examples
+~~~~~~~~
+- Added data loading demo with multiple formats
+- Included sample data generation scripts
+- Added configuration examples
+- Demonstrated key features with real-world scenarios 

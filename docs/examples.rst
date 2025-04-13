@@ -240,4 +240,69 @@ Error Handling
    except Exception as e:
        print(f"Unexpected error: {e}")
 
-For more examples and use cases, check out the `GitHub repository <https://github.com/carrycooldude/JAX-Dataloader/tree/main/examples>`_. 
+For more examples and use cases, check out the `GitHub repository <https://github.com/carrycooldude/JAX-Dataloader/tree/main/examples>`_.
+
+Benchmarking
+-----------
+
+Performance Analysis
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   from jax_dataloader import DataLoader, DataLoaderConfig
+   from jax_dataloader.benchmark import BenchmarkRunner
+
+   # Create a configuration for benchmarking
+   config = DataLoaderConfig(
+       data_path="data/train.csv",
+       loader_type="csv",
+       batch_size=32,
+       shuffle=True
+   )
+
+   # Create a benchmark runner
+   benchmark = BenchmarkRunner(config)
+
+   # Run CPU performance analysis
+   results = benchmark.run_cpu_analysis(
+       num_iterations=100,
+       warmup_iterations=10
+   )
+
+   # Print results
+   print(f"Average batch loading time: {results['avg_batch_time']:.4f} seconds")
+   print(f"Memory usage: {results['memory_usage']}")
+   print(f"CPU utilization: {results['cpu_utilization']:.2f}%")
+
+Multi-Device Benchmarking
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   from jax_dataloader import DataLoader, DataLoaderConfig
+   from jax_dataloader.benchmark import BenchmarkRunner
+   import jax
+
+   # Create configurations for different batch sizes
+   configs = [
+       DataLoaderConfig(
+           data_path="data/train.csv",
+           loader_type="csv",
+           batch_size=32 * (2 ** i),  # Test different batch sizes
+           shuffle=True
+       ) for i in range(4)  # Test 32, 64, 128, 256 batch sizes
+   ]
+
+   # Run benchmarks for each configuration
+   for config in configs:
+       benchmark = BenchmarkRunner(config)
+       results = benchmark.run_multi_device_analysis(
+           num_devices=jax.device_count(),
+           num_iterations=50
+       )
+       
+       print(f"\nResults for batch size {config.batch_size}:")
+       print(f"Throughput: {results['throughput']:.2f} samples/second")
+       print(f"GPU utilization: {results['gpu_utilization']:.2f}%")
+       print(f"Memory efficiency: {results['memory_efficiency']:.2f}%") 

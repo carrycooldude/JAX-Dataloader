@@ -4,7 +4,7 @@ import os
 import jax
 import jax.numpy as jnp
 from jax import jit, vmap, lax, random
-from typing import Iterator, Union, Optional, Any, Tuple
+from typing import Iterator, Union, Optional, Any, Tuple, Dict, List
 import numpy as np
 import threading
 from queue import Queue, Empty, Full
@@ -21,6 +21,12 @@ from jax import profiler
 import queue
 import warnings
 import gc
+from .memory.memory_pool import MemoryManager
+from .transform.augmentation import JAXDataAugmentation
+from .progress.progress_logger import ProgressLogger
+from .distributed.distributed_loader import DistributedJAXDataLoader
+from transformers import PreTrainedTokenizer
+from datasets import Dataset
 
 # Enable maximum performance optimizations
 jax.config.update('jax_default_matmul_precision', 'float32')
@@ -35,83 +41,120 @@ jax.config.update('jax_debug_infs', False)
 class JAXDataLoader:
     def __init__(
         self,
-        dataset: Union[np.ndarray, jnp.ndarray],
+        dataset: Union[Dataset, np.ndarray, jnp.ndarray],
         batch_size: int,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
         shuffle: bool = True,
         num_workers: int = 2,
         prefetch_size: int = 2,
         use_mmap: bool = True,
         use_pinned_memory: bool = True,
-        device: Optional[str] = None
+        device: Optional[str] = None,
+        distributed: bool = False,
+        world_size: int = 1,
+        rank: int = 0,
+        augmentations: Optional[List[str]] = None,
+        log_file: Optional[str] = None
     ):
-        # Convert dataset to JAX array once at initialization
+        # Initialize memory manager
+        self._memory_manager = MemoryManager()
+        
+        # Setup progress logging
+        self._logger = ProgressLogger(log_file=log_file)
+        
+        # Initialize augmentation
+        self._augmenter = JAXDataAugmentation(augmentations)
+        
+        # Convert dataset to JAX array if needed
         if isinstance(dataset, np.ndarray):
             self.dataset = jnp.array(dataset)
         else:
             self.dataset = dataset
             
         self.batch_size = batch_size
+        self.tokenizer = tokenizer
         self.shuffle = shuffle
         self.num_workers = num_workers
         self.prefetch_size = prefetch_size
         self.device = device
-
+        self.distributed = distributed
+        
         # Calculate shapes and sizes
         self._dataset_len = len(dataset)
         self._batch_shape = (batch_size,) + dataset.shape[1:]
         self._num_batches = self._dataset_len // batch_size
         
-        # Pre-compute all possible batch indices
-        self._all_indices = jnp.arange(self._dataset_len)
-        self._batch_indices = jnp.array([
-            self._all_indices[i:i + batch_size] 
-            for i in range(0, self._dataset_len - batch_size + 1, batch_size)
-        ])
-        
-        # Pre-allocate batch buffer
-        self._batch_buffer = jnp.zeros(self._batch_shape, dtype=self.dataset.dtype)
-        
-        # Initialize single queue with minimal size
-        self._batch_queue = Queue(maxsize=prefetch_size)
-        
-        # Setup synchronization primitives
-        self._stop_event = threading.Event()
-        self._worker_thread = None
-        
-        # Start worker thread
+        # Initialize distributed loader if needed
+        if distributed:
+            self._loader = DistributedJAXDataLoader(
+                dataset=dataset,
+                batch_size=batch_size,
+                tokenizer=tokenizer,
+                num_workers=num_workers,
+                prefetch_size=prefetch_size,
+                device=device,
+                world_size=world_size,
+                rank=rank
+            )
+        else:
+            # Setup single process loader
+            self._batch_queue = Queue(maxsize=prefetch_size)
+            self._stop_event = threading.Event()
+            self._worker_thread = None
+            self._initialize_worker()
+            
+    def _initialize_worker(self):
+        """Initialize worker thread"""
         self._worker_thread = threading.Thread(target=self._worker_fn, daemon=True)
         self._worker_thread.start()
-
+        
     def _worker_fn(self):
-        """Optimized worker function for processing batches"""
+        """Worker function for processing batches"""
+        indices = np.arange(self._dataset_len)
         while not self._stop_event.is_set():
-            # Shuffle indices if needed
             if self.shuffle:
-                indices = jax.random.permutation(jax.random.PRNGKey(int(time.time())), 
-                                               self._all_indices)
-                batch_indices = jnp.array([
-                    indices[i:i + self.batch_size] 
-                    for i in range(0, self._dataset_len - self.batch_size + 1, self.batch_size)
-                ])
-            else:
-                batch_indices = self._batch_indices
-            
-            # Process all batches at once using JAX's vectorization
-            batches = jax.vmap(lambda idx: self.dataset[idx])(batch_indices)
-            
-            # Put batches in queue
-            for batch in batches:
+                np.random.shuffle(indices)
+                
+            for i in range(0, self._dataset_len - self.batch_size + 1, self.batch_size):
                 if self._stop_event.is_set():
                     break
+                    
+                start_time = time.time()
+                
+                # Get batch buffer
+                batch_buffer = self._memory_manager.get_buffer(
+                    'batch',
+                    self._batch_shape,
+                    str(self.dataset.dtype)
+                )
+                
+                # Process batch
+                batch_indices = indices[i:i + self.batch_size]
+                batch = self.dataset[batch_indices]
+                
+                # Apply augmentations
+                batch = self._augmenter.apply(batch)
+                
+                # Update metrics
+                batch_time = time.time() - start_time
+                memory_usage = psutil.Process().memory_info().rss
+                self._logger.update_batch(batch_time, memory_usage)
+                
+                # Put batch in queue
                 try:
                     self._batch_queue.put(batch, timeout=0.1)
                 except Full:
                     continue
-
+                    
     def __iter__(self):
+        if self.distributed:
+            return iter(self._loader)
         return self
-
+        
     def __next__(self):
+        if self.distributed:
+            return next(self._loader)
+            
         if self._stop_event.is_set():
             raise StopIteration
             
@@ -120,24 +163,37 @@ class JAXDataLoader:
             return batch
         except Empty:
             raise StopIteration
-
+            
+    def start_epoch(self, epoch: int, total_epochs: int):
+        """Start tracking a new epoch"""
+        self._logger.start_epoch(epoch, total_epochs, self._num_batches)
+        
+    def display_summary(self):
+        """Display training summary"""
+        self._logger.display_summary()
+        
+    def save_metrics(self, file_path: str):
+        """Save metrics to file"""
+        self._logger.save_metrics(file_path)
+        
     def __del__(self):
         """Cleanup resources"""
         self._stop_event.set()
         
         # Clear queue
-        while not self._batch_queue.empty():
-            try:
-                self._batch_queue.get_nowait()
-            except Empty:
-                break
-        
-        # Wait for thread to finish
-        if self._worker_thread:
-            self._worker_thread.join(timeout=0.1)
-            
-        # Force garbage collection
-        gc.collect()
+        if not self.distributed:
+            while not self._batch_queue.empty():
+                try:
+                    self._batch_queue.get_nowait()
+                except Empty:
+                    break
+                    
+            # Wait for thread
+            if self._worker_thread:
+                self._worker_thread.join(timeout=0.1)
+                
+        # Cleanup memory
+        self._memory_manager.cleanup()
 
     def _setup_mmap_storage(self):
         """Setup memory-mapped storage for the dataset"""

@@ -1,5 +1,5 @@
 Framework,Time/Epoch,Speedup,Memory,Throughput
-JAX DataLoader,0.2247s,2.33x,1502.1 MB,4.45
-PyTorch DataLoader,9.0587s,0.06x,1502.1 MB,0.11
-TensorFlow DataLoader,1.4570s,0.36x,1502.1 MB,0.69
-NumPy,0.5226s,1.00x,1502.1 MB,1.91
+JAX DataLoader,0.1499s,1.22x,1237.6 MB,6.67
+PyTorch DataLoader,6.2639s,0.03x,1237.6 MB,0.16
+TensorFlow DataLoader,1.6842s,0.11x,1237.6 MB,0.59
+NumPy,0.1829s,1.00x,1237.6 MB,5.47
